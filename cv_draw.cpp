@@ -100,6 +100,16 @@ void CvDraw::draw_cross(cv::Mat & image,
     }   
 }
 
+void CvDraw::copy_rgb_image(const unsigned char * data,
+                            int img_width,
+                            int img_height,
+                            cv::Mat &image)
+{
+//     Mat(int rows, int cols, int type, void* data, size_t step=AUTO_STEP);
+    cv::Mat temp = cv::Mat(img_height, img_width, CV_8UC3, (void*)data);
+    image = temp.clone();
+}
+
 cv::Scalar CvDraw::red()
 {
     return cv::Scalar(0, 0, 255);
@@ -111,7 +121,7 @@ cv::Scalar CvDraw::green()
     return cv::Scalar(0, 255, 0);
 }
 
-cv::Scalar blue()
+cv::Scalar CvDraw::blue()
 {
     return cv::Scalar(255, 0, 0);
 }
