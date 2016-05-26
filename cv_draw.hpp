@@ -53,15 +53,17 @@ public:
                                         vector<float> & reproj_errors,
                                         cv::Mat & error_image);
     
-    static cv::Scalar red();
-    static cv::Scalar green();
-    static cv::Scalar blue();
+   
     
     // rgb CV_8U image, temporal function
     static void copy_rgb_image(const unsigned char * data,
                                int img_width,
                                int img_height,
                                cv::Mat &image);
+    
+    static cv::Scalar red();
+    static cv::Scalar green();
+    static cv::Scalar blue();
 };
 
 
