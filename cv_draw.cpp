@@ -74,6 +74,34 @@ void CvDraw::draw_reprojection_error(const vector<cv::Point3f> &pts_3d,
     }
 }
 
+cv::Mat CvDraw::visualize_gradient(const Mat & magnitude, const Mat & orientation)
+{
+    assert(magnitude.rows == orientation.rows);
+    assert(magnitude.cols == orientation.cols);
+    assert(magnitude.channels() == 1);
+    assert(orientation.channels() == 1);
+    
+    cv::Mat mag, ori;
+    magnitude.convertTo(mag, CV_64FC1);
+    orientation.convertTo(ori, CV_64FC1);
+    
+    int h = mag.rows;
+    int w = mag.cols;
+    cv::Mat vmat = cv::Mat::zeros(h, w, CV_8UC3);
+    for (int y = 0; y<h; y++) {
+        for (int x = 0; x<w; x++) {
+            //printf("%f\n", ori.at<double>(y, x));
+            int h = (ori.at<double>(y, x))/(CV_2PI) * 120;
+            int s = mag.at<double>(y, x);
+            vmat.at<cv::Vec3b>(y, x)[0] = h;
+            vmat.at<cv::Vec3b>(y, x)[1] = s;
+            vmat.at<cv::Vec3b>(y, x)[2] = 255;
+        }
+    }
+    cv::cvtColor(vmat, vmat, CV_HSV2BGR);
+    return vmat;
+}
+
 void CvDraw::draw_cross(cv::Mat & image,
                         const vector<cv::Point2f> & pts,
                         const cv::Scalar & color,

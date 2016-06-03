@@ -19,7 +19,8 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/highgui/highgui_c.h"
 
-using namespace::std;
+using std::vector;
+using cv::Mat;
 
 class CvDraw
 {
@@ -53,6 +54,12 @@ public:
                                         vector<float> & reproj_errors,
                                         cv::Mat & error_image);
     
+    // visualize gradient using hsv color
+    // magnitude [0, 255)
+    // orientation [0, 2*pi]
+    static cv::Mat visualize_gradient(const Mat & magnitude, const Mat & orientation);
+                                   
+    
    
     
     // rgb CV_8U image, temporal function
@@ -60,6 +67,8 @@ public:
                                int img_width,
                                int img_height,
                                cv::Mat &image);
+    
+    
     
     static cv::Scalar red();
     static cv::Scalar green();

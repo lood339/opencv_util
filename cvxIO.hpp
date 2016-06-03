@@ -24,7 +24,7 @@ using std::string;
 using std::vector;
 
 
-class cvxIO
+class CvxIO
 {
 public:
     // unit: millimeter
@@ -37,6 +37,7 @@ public:
     static void imwrite_depth_8u(const char *file, const cv::Mat & depth_img);
     static void imwrite_xyz_to_8urgb(const char *file, const cv::Mat & xyz_img);
     
+    // format as double
     static bool save_mat(const char *txtfile, const cv::Mat & mat);
     static bool load_mat(const char *txtfile, cv::Mat & mat);
     

@@ -14,7 +14,7 @@ using cv::Mat;
 using std::cout;
 using std::endl;
 
-bool cvxIO::imread_depth_16bit_to_32f(const char *file, cv::Mat & depth_img)
+bool CvxIO::imread_depth_16bit_to_32f(const char *file, cv::Mat & depth_img)
 {
     depth_img = cv::imread(file, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
     if (depth_img.empty()) {
@@ -26,7 +26,7 @@ bool cvxIO::imread_depth_16bit_to_32f(const char *file, cv::Mat & depth_img)
     return true;
 }
 
-bool cvxIO::imread_depth_16bit_to_64f(const char *filename, cv::Mat & depth_img)
+bool CvxIO::imread_depth_16bit_to_64f(const char *filename, cv::Mat & depth_img)
 {
     depth_img = cv::imread(filename, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
     if (depth_img.empty()) {
@@ -38,7 +38,7 @@ bool cvxIO::imread_depth_16bit_to_64f(const char *filename, cv::Mat & depth_img)
     return true;
 }
 
-bool cvxIO::imread_rgb_8u(const char *file_name, cv::Mat & rgb_img)
+bool CvxIO::imread_rgb_8u(const char *file_name, cv::Mat & rgb_img)
 {
     rgb_img = cv::imread(file_name, CV_LOAD_IMAGE_COLOR);
     if (rgb_img.empty()) {
@@ -49,7 +49,7 @@ bool cvxIO::imread_rgb_8u(const char *file_name, cv::Mat & rgb_img)
     return true;
 }
 
-void cvxIO::imwrite_depth_8u(const char *file, const cv::Mat & depth_img)
+void CvxIO::imwrite_depth_8u(const char *file, const cv::Mat & depth_img)
 {
     assert(depth_img.type() == CV_32F || depth_img.type() == CV_64F);
     assert(depth_img.channels() == 1);
@@ -70,7 +70,7 @@ void cvxIO::imwrite_depth_8u(const char *file, const cv::Mat & depth_img)
     printf("save to: %s\n", file);
 }
 
-void cvxIO::imwrite_xyz_to_8urgb(const char *file, const cv::Mat & xyz_img)
+void CvxIO::imwrite_xyz_to_8urgb(const char *file, const cv::Mat & xyz_img)
 {
     assert(xyz_img.type() == CV_32FC3 || xyz_img.type() == CV_64FC3);
     
@@ -95,7 +95,7 @@ void cvxIO::imwrite_xyz_to_8urgb(const char *file, const cv::Mat & xyz_img)
     printf("save to: %s\n", file);
 }
 
-bool cvxIO::save_mat(const char *txtfile, const cv::Mat & mat)
+bool CvxIO::save_mat(const char *txtfile, const cv::Mat & mat)
 {
     assert(mat.type() == CV_64FC1);
     FILE * pf = fopen(txtfile, "w");
@@ -115,12 +115,31 @@ bool cvxIO::save_mat(const char *txtfile, const cv::Mat & mat)
     return true;
 }
 
-bool cvxIO::load_mat(const char *txtfile, cv::Mat & mat)
+bool CvxIO::load_mat(const char *txtfile, cv::Mat & mat)
 {
-    return false;
+    FILE *pf = fopen(txtfile, "r");
+    if (!pf) {
+        printf("Error: can not read from %s \n", txtfile);
+        return false;
+    }
+    int h = 0;
+    int w = 0;
+    int num = fscanf(pf, "%d %d", &h, &w);
+    assert(num == 2);
+    mat = cv::Mat::zeros(h, w, CV_64FC1);
+    for (int y = 0; y<h; y++) {
+        for (int x = 0; x<w; x++) {
+            double val = 0;
+            num = fscanf(pf, "%lf", &val);
+            assert(num ==1);
+            mat.at<double>(y, x) = val;
+        }
+    }
+    fclose(pf);
+    return true;
 }
 
-vector<string> cvxIO::read_files(const char *dir_name)
+vector<string> CvxIO::read_files(const char *dir_name)
 {
     
     const char *post_fix = strrchr(dir_name, '.');
