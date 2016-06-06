@@ -25,7 +25,7 @@ class CvxImgProc
 {
 public:
     // gradient orientation in [0, 2 * pi)
-    static Mat gradientOrientation(const Mat & img);
+    static Mat gradientOrientation(const Mat & img, const int gradMagThreshold = 0);
 };
 
 #endif /* cvxImgProc_cpp */

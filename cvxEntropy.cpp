@@ -14,6 +14,7 @@ double CvxEntropy::computeGaussianEntropy(const cv::Mat & cov)
 {
     assert(cov.rows == cov.cols);
     double det = cv::determinant(cov);
+    det = fabs(det) + 0.00000000000001;
     assert(det > 0.0);
     double temp = pow(2.0 * M_PI * M_E, cov.rows);
     double entropy = 0.5 * log( temp * det);
@@ -38,5 +39,18 @@ double CvxEntropy::conputeGMMEntropyFirstOrderAppro(const cv::ml::EM & em_model)
     }
     
     return entropy;
+}
+
+int CvxEntropy::argminEntropy(const vector<cv::Mat> & covs)
+{
+    assert(covs.size() > 1);
     
+    Mat entropy(1, (int)covs.size(), CV_64FC1, 0.0);
+    for (int i = 0; i<covs.size(); i++) {
+        entropy.at<double>(0, i) = CvxEntropy::computeGaussianEntropy(covs[i]);
+    }
+    double minv = 0.0, maxv = 0.0;
+    int min_idx = 0, max_idx = 0;
+    cv::minMaxIdx(entropy, &minv, &maxv, &min_idx, &max_idx);
+    return min_idx;
 }

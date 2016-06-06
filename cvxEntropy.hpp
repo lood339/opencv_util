@@ -13,7 +13,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/core_c.h>
 #include <opencv2/ml.hpp>
+#include <vector>
 
+using std::vector;
 // calculate entropy of different models
 class CvxEntropy
 {
@@ -24,6 +26,9 @@ public:
     
     // em_model: gaussian mixture model
     static double conputeGMMEntropyFirstOrderAppro(const cv::ml::EM & em_model);
+    
+    // index of minimum entropy
+    static int argminEntropy(const vector<cv::Mat> & covs);
     
     
 };
