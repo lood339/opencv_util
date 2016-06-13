@@ -23,3 +23,12 @@ CvxUtil:: generateRandomNumbers(double min_val, double max_val, int rnd_num)
     }
     return data;
 }
+
+void
+CvxUtil::splitFilename (const string& str, string &path, string &file)
+{
+    assert(!str.empty());
+    unsigned int found = (unsigned int )str.find_last_of("/\\");
+    path = str.substr(0, found);
+    file = str.substr(found + 1);
+}

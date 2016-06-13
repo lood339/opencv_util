@@ -11,8 +11,10 @@
 
 #include <stdio.h>
 #include <vector>
+#include <string>
 
 using std::vector;
+using std::string;
 
 class CvxUtil
 {
@@ -25,6 +27,9 @@ public:
     {
         return x >= 0 && y >= 0 && x < width && y < height;
     }
+    
+    static void splitFilename (const string& str, string &path, string &file);
+    
 
     
 };

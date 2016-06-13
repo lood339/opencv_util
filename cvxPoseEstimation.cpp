@@ -263,10 +263,12 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
         // sample random set
         vector<cv::Point2d> sampled_img_pts;
         vector<cv::Point3d> sampled_wld_pts;
+        vector<int> sampled_indices;
         for (int i =0; i<B; i++) {
             int index = rand()%N;
             sampled_img_pts.push_back(img_pts[index]);
             sampled_wld_pts.push_back(wld_pts[index]);
+            sampled_indices.push_back(index);
         }
         
         // count outliers
@@ -274,6 +276,8 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
             // evaluate the accuracy by check reprojection error
             vector<cv::Point2d> projected_pts;
             cv::projectPoints(sampled_wld_pts, losses[i].rvec_, losses[i].tvec_, camera_matrix, dist_coeff, projected_pts);
+            // reset inlier
+            losses[i].inlier_indices_.clear();
             for (int j = 0; j<projected_pts.size(); j++) {
                 cv::Point2d dif = projected_pts[j] - sampled_img_pts[j];
                 double dis = cv::norm(dif);
@@ -281,7 +285,7 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
                     losses[i].loss_ += 1.0;
                 }
                 else  {
-                    losses[i].inlier_indices_.push_back(j);
+                    losses[i].inlier_indices_.push_back(sampled_indices[j]);
                 }
             }
         }
@@ -303,8 +307,8 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
                 vector<cv::Point3d> inlier_wld_pts;
                 for (int j = 0; j < losses[i].inlier_indices_.size(); j++) {
                     int index = losses[i].inlier_indices_[j];
-                    inlier_img_pts.push_back(sampled_img_pts[index]);
-                    inlier_wld_pts.push_back(sampled_wld_pts[index]);
+                    inlier_img_pts.push_back(img_pts[index]);
+                    inlier_wld_pts.push_back(wld_pts[index]);
                 }
                 
                 Mat rvec = losses[i].rvec_;
@@ -313,6 +317,34 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
                 if (is_solved) {
                     losses[i].rvec_ = rvec;
                     losses[i].tvec_ = tvec;
+                    
+                    /*                    
+                    // test on all sampled points
+                    vector<cv::Point2d> all_projected_pts;
+                    cv::projectPoints(wld_pts, losses[i].rvec_, losses[i].tvec_, camera_matrix, dist_coeff, all_projected_pts);
+                    
+                    vector<cv::Point2d> all_inlier_img_pts;
+                    vector<cv::Point3d> all_inlier_wld_pts;
+                    for (int j = 0; j<all_projected_pts.size(); j++) {
+                        cv::Point2d dif = all_projected_pts[j] - img_pts[j];
+                        double dis = cv::norm(dif);
+                        if (dis/2.0 < reproj_threshold) {
+                            all_inlier_img_pts.push_back(img_pts[j]);
+                            all_inlier_wld_pts.push_back(wld_pts[j]);
+                        }
+                    }
+                    
+                    if (inlier_img_pts.size() > losses[i].inlier_indices_.size()) {
+                        Mat rvec = losses[i].rvec_;
+                        Mat tvec = losses[i].tvec_;
+                        bool is_solved = cv::solvePnP(Mat(all_inlier_wld_pts), Mat(all_inlier_img_pts), camera_matrix, dist_coeff, rvec, tvec, true, CV_EPNP);
+                        if (is_solved) {
+                            losses[i].rvec_ = rvec;
+                            losses[i].tvec_ = tvec;
+                        }
+                    }
+                     */
+                    
                 }
             }
         }        
