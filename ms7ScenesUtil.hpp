@@ -39,6 +39,11 @@ public:
     static cv::Mat camera_depth_to_world_coordinate(const cv::Mat & camera_depth_img,
                                                     const cv::Mat & camera_to_world_pose,
                                                     cv::Mat & mask);
+    // mask: CV_8UC1 0 --> invalid sample
+    static cv::Mat camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_img,                                                    
+                                                     cv::Mat & mask);
+    
+    
     
     
     static inline int invalid_camera_depth(){return 65535;}

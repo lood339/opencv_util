@@ -11,6 +11,7 @@
 #include "vl_sift_feature.h"
 #include "vgl_fundamental_ransac.hpp"
 #include "RGBGUtil.hpp"
+#include "cvxCalib3d.hpp"
 
 using std::cout;
 using std::endl;
@@ -144,8 +145,9 @@ bool CvxPoseEstimation::estimateCameraPoseFromImageMatching(const cv::Mat & came
 struct HypotheseLoss
 {
     double loss_;
-    Mat rvec_;       // rotation
-    Mat tvec_;       // translation
+    Mat rvec_;       // rotation     for 3D --> 2D projection
+    Mat tvec_;       // translation  for 3D --> 2D projection
+    Mat affine_;     //              for 3D --> 3D camera to world transformation
     vector<unsigned int> inlier_indices_;
     
     HypotheseLoss()
@@ -162,6 +164,7 @@ struct HypotheseLoss
         loss_ = other.loss_;
         rvec_ = other.rvec_;
         tvec_ = other.tvec_;
+        affine_ = other.affine_;
         inlier_indices_.clear();
         inlier_indices_.resize(other.inlier_indices_.size());
         for(int i = 0; i<other.inlier_indices_.size(); i++) {
@@ -183,6 +186,7 @@ struct HypotheseLoss
         loss_ = other.loss_;
         rvec_ = other.rvec_;
         tvec_ = other.tvec_;
+        affine_ = other.affine_;
         inlier_indices_.clear();
         inlier_indices_.resize(other.inlier_indices_.size());
         for(int i = 0; i<other.inlier_indices_.size(); i++) {
@@ -317,34 +321,6 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
                 if (is_solved) {
                     losses[i].rvec_ = rvec;
                     losses[i].tvec_ = tvec;
-                    
-                    /*                    
-                    // test on all sampled points
-                    vector<cv::Point2d> all_projected_pts;
-                    cv::projectPoints(wld_pts, losses[i].rvec_, losses[i].tvec_, camera_matrix, dist_coeff, all_projected_pts);
-                    
-                    vector<cv::Point2d> all_inlier_img_pts;
-                    vector<cv::Point3d> all_inlier_wld_pts;
-                    for (int j = 0; j<all_projected_pts.size(); j++) {
-                        cv::Point2d dif = all_projected_pts[j] - img_pts[j];
-                        double dis = cv::norm(dif);
-                        if (dis/2.0 < reproj_threshold) {
-                            all_inlier_img_pts.push_back(img_pts[j]);
-                            all_inlier_wld_pts.push_back(wld_pts[j]);
-                        }
-                    }
-                    
-                    if (inlier_img_pts.size() > losses[i].inlier_indices_.size()) {
-                        Mat rvec = losses[i].rvec_;
-                        Mat tvec = losses[i].tvec_;
-                        bool is_solved = cv::solvePnP(Mat(all_inlier_wld_pts), Mat(all_inlier_img_pts), camera_matrix, dist_coeff, rvec, tvec, true, CV_EPNP);
-                        if (is_solved) {
-                            losses[i].rvec_ = rvec;
-                            losses[i].tvec_ = tvec;
-                        }
-                    }
-                     */
-                    
                 }
             }
         }        
@@ -368,6 +344,141 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
     
     // camere to world coordinate
     camera_pose = camera_pose.inv();
+    
+    return true;
+}
+
+bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,
+                                           const vector<cv::Point3d> & wld_pts,
+                                           const PreemptiveRANSAC3DParameter & param,
+                                           cv::Mat & camera_pose)
+{
+    assert(camera_pts.size() == wld_pts.size());
+    assert(camera_pts.size() > 500);
+    
+    const int num_iteration = 2048;
+    int K = 1024;
+    const int N = (int)camera_pts.size();
+    const int B = 500;
+    
+    vector<cv::Mat > affine_candidate;
+    for (int i = 0; i<num_iteration; i++) {
+        
+        int k1 = 0;
+        int k2 = 0;
+        int k3 = 0;
+        int k4 = 0;
+        
+        do{
+            k1 = rand()%N;
+            k2 = rand()%N;
+            k3 = rand()%N;
+            k4 = rand()%N;
+        }while (k1 == k2 || k1 == k3 || k1 == k4 ||
+                k2 == k3 || k2 == k4 || k3 == k4);
+        
+        vector<cv::Point3d> sampled_camera_pts;
+        vector<cv::Point3d> sampled_wld_pts;
+        
+        sampled_camera_pts.push_back(camera_pts[k1]);
+        sampled_camera_pts.push_back(camera_pts[k2]);
+        sampled_camera_pts.push_back(camera_pts[k3]);
+        sampled_camera_pts.push_back(camera_pts[k4]);
+        
+        sampled_wld_pts.push_back(wld_pts[k1]);
+        sampled_wld_pts.push_back(wld_pts[k2]);
+        sampled_wld_pts.push_back(wld_pts[k3]);
+        sampled_wld_pts.push_back(wld_pts[k4]);
+        
+        Mat affine;
+        Mat inlier;
+        bool is_solved = cv::estimateAffine3D(Mat(sampled_camera_pts), Mat(sampled_wld_pts), affine, inlier, 0.9);
+        if (is_solved) {
+            affine_candidate.push_back(affine);
+        }
+        if (affine_candidate.size() > K) {
+            printf("initialization repeat %d times\n", i);
+            break;
+        }
+    }
+    printf("init camera parameter number is %lu\n", affine_candidate.size());
+    
+    vector<HypotheseLoss> losses;
+    for (int i = 0; i<affine_candidate.size(); i++) {
+        HypotheseLoss hyp(0.0);
+        hyp.affine_ = affine_candidate[i];
+        losses.push_back(hyp);
+    }
+    
+    double threshold = param.dis_threshold_;
+    while (losses.size() > 1) {
+        // sample random set
+        vector<cv::Point3d> sampled_camera_pts;
+        vector<cv::Point3d> sampled_wld_pts;
+        vector<int> sampled_indices;
+        for (int i =0; i<B; i++) {
+            int index = rand()%N;
+            sampled_camera_pts.push_back(camera_pts[index]);
+            sampled_wld_pts.push_back(wld_pts[index]);
+            sampled_indices.push_back(index);
+        }
+        
+        // count outliers
+        for (int i = 0; i<losses.size(); i++) {
+            // evaluate the accuracy by check transformation
+            vector<cv::Point3d> transformed_pts;
+            CvxCalib3D::rigidTransform(sampled_camera_pts, losses[i].affine_, transformed_pts);
+            
+            // reset inlier index?
+            losses[i].inlier_indices_.clear();
+            for (int j = 0; j<transformed_pts.size(); j++) {
+                cv::Point3d dif = transformed_pts[j] - sampled_wld_pts[j];
+                double dis = cv::norm(dif);
+              //  cout<<" distance is "<<dis<<endl;
+                if (dis > threshold) {
+                    losses[i].loss_ += 1.0;
+                }
+                else  {
+                    losses[i].inlier_indices_.push_back(sampled_indices[j]);
+                }
+            } // end of j
+        }
+        
+        std::sort(losses.begin(), losses.end());
+        losses.resize(losses.size()/2);
+        
+        for (int i = 0; i<losses.size(); i++) {
+            printf("after: loss is %lf\n", losses[i].loss_);
+        }
+        printf("\n\n");
+        
+        // refine by inliers
+        for (int i = 0; i<losses.size(); i++) {
+            // number of inliers is larger than minimum configure
+            if (losses[i].inlier_indices_.size() > 4) {
+                vector<cv::Point3d> inlier_camera_pts;
+                vector<cv::Point3d> inlier_wld_pts;
+                for (int j = 0; j < losses[i].inlier_indices_.size(); j++) {
+                    int index = losses[i].inlier_indices_[j];
+                    inlier_camera_pts.push_back(camera_pts[index]);
+                    inlier_wld_pts.push_back(wld_pts[index]);
+                }
+                /*
+                Mat rvec = losses[i].rvec_;
+                Mat tvec = losses[i].tvec_;
+                bool is_solved = cv::solvePnP(Mat(inlier_wld_pts), Mat(inlier_img_pts), camera_matrix, dist_coeff, rvec, tvec, true, CV_EPNP);  // CV_ITERATIVE   CV_EPNP
+                if (is_solved) {
+                    losses[i].rvec_ = rvec;
+                    losses[i].tvec_ = tvec;
+                }
+                 */
+            }
+        }
+
+        
+    }
+
+
     
     return true;
 }

@@ -18,14 +18,24 @@ using std::vector;
 
 struct PreemptiveRANSACParameter
 {
-    double reproj_threshold;
-    
+    double reproj_threshold; // re-projection error threshold, unit pixel
     
 public:
     PreemptiveRANSACParameter()
     {
         reproj_threshold = 15.0;
     }
+};
+
+struct PreemptiveRANSAC3DParameter
+{
+    double dis_threshold_; // distance threshod, unit meter
+public:
+    PreemptiveRANSAC3DParameter()
+    {
+        dis_threshold_ = 0.1;
+    }
+    
 };
 
 class CvxPoseEstimation
@@ -56,13 +66,19 @@ public:
                                                     cv::Mat & estimated_pose,
                                                     const int min_matching_num = 50);
     
-    //
+    // wld_pts: estimated points, has outliers
     static bool preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
                                  const vector<cv::Point3d> & wld_pts,
                                  const cv::Mat & camera_matrix,
                                  const cv::Mat & dist_coeff,
                                  const PreemptiveRANSACParameter & param,
                                  cv::Mat & camera_pose);
+    
+    // wld_pts: estimated points, had outliers
+    static bool preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,
+                                   const vector<cv::Point3d> & wld_pts,
+                                   const PreemptiveRANSAC3DParameter & param,
+                                   cv::Mat & camera_pose);
     
     // angle_distance: degree
     static void poseDistance(const cv::Mat & src_pose,
