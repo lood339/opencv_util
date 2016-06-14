@@ -75,6 +75,22 @@ bool CvxPoseEstimation::estimateCameraPose(const cv::Mat & camera_matrix,
     return true;
 }
 
+bool CvxPoseEstimation::estimateCameraPose(const vector<cv::Point3d> & camera_pts,
+                                           const vector<cv::Point3d> & wld_pts,
+                                           cv::Mat & camera_pose)
+{
+    assert(camera_pts.size() == wld_pts.size());
+    
+    Mat affine;
+    Mat inlier;
+    bool is_solved = cv::estimateAffine3D(Mat(camera_pts), Mat(wld_pts), affine, inlier, 0.9);
+    if (is_solved) {
+        camera_pose = cv::Mat::eye(4, 4, CV_64F);
+        affine.copyTo(camera_pose(cv::Rect(0, 0, 4, 3)));
+    }
+    return is_solved;
+}
+
 bool CvxPoseEstimation::estimateCameraPoseFromImageMatching(const cv::Mat & camera_matrix,
                                                             const cv::Mat & dist_coeff,
                                                             const vil_image_view<vxl_byte> & query_rgb_image,
@@ -392,8 +408,11 @@ bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pt
         
         Mat affine;
         Mat inlier;
-        bool is_solved = cv::estimateAffine3D(Mat(sampled_camera_pts), Mat(sampled_wld_pts), affine, inlier, 0.9);
-        if (is_solved) {
+        //bool is_solved = cv::estimateAffine3D(Mat(sampled_camera_pts), Mat(sampled_wld_pts), affine, inlier, 0.9);
+        CvxCalib3D::KabschTransform(sampled_camera_pts, sampled_wld_pts, affine);
+        bool is_solved = true;
+        if (is_solved)
+        {
             affine_candidate.push_back(affine);
         }
         if (affine_candidate.size() > K) {
@@ -430,7 +449,8 @@ bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pt
             CvxCalib3D::rigidTransform(sampled_camera_pts, losses[i].affine_, transformed_pts);
             
             // reset inlier index?
-            losses[i].inlier_indices_.clear();
+            
+            //losses[i].inlier_indices_.clear();
             for (int j = 0; j<transformed_pts.size(); j++) {
                 cv::Point3d dif = transformed_pts[j] - sampled_wld_pts[j];
                 double dis = cv::norm(dif);
@@ -442,13 +462,16 @@ bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pt
                     losses[i].inlier_indices_.push_back(sampled_indices[j]);
                 }
             } // end of j
+            // printf("inlier number is %lu\n", losses[i].inlier_indices_.size());
         }
+        //getchar();
         
         std::sort(losses.begin(), losses.end());
         losses.resize(losses.size()/2);
         
         for (int i = 0; i<losses.size(); i++) {
-            printf("after: loss is %lf\n", losses[i].loss_);
+        //    printf("after: loss is %lf\n", losses[i].loss_);
+            printf("inlier number is %lu\n", losses[i].inlier_indices_.size());
         }
         printf("\n\n");
         
@@ -463,22 +486,23 @@ bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pt
                     inlier_camera_pts.push_back(camera_pts[index]);
                     inlier_wld_pts.push_back(wld_pts[index]);
                 }
-                /*
-                Mat rvec = losses[i].rvec_;
-                Mat tvec = losses[i].tvec_;
-                bool is_solved = cv::solvePnP(Mat(inlier_wld_pts), Mat(inlier_img_pts), camera_matrix, dist_coeff, rvec, tvec, true, CV_EPNP);  // CV_ITERATIVE   CV_EPNP
+                Mat affine;
+                Mat inlier;
+           //     bool is_solved = cv::estimateAffine3D(Mat(inlier_camera_pts), Mat(inlier_wld_pts), affine, inlier, 0.9);
+                CvxCalib3D::KabschTransform(inlier_camera_pts, inlier_wld_pts, affine);
+                bool is_solved = true;
                 if (is_solved) {
-                    losses[i].rvec_ = rvec;
-                    losses[i].tvec_ = tvec;
+                    losses[i].affine_ = affine;
+                    losses[i].inlier_indices_.clear();
                 }
-                 */
             }
         }
-
-        
     }
-
-
+    assert(losses.size() == 1);
+    
+    camera_pose = cv::Mat::eye(4, 4, CV_64F);
+    losses[0].affine_.copyTo(camera_pose(cv::Rect(0, 0, 4, 3)));
+    cout<<"camera pose\n"<<camera_pose<<endl;
     
     return true;
 }

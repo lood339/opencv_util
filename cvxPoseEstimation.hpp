@@ -54,6 +54,11 @@ public:
                                    cv::Mat & camera_pose,
                                    const double outlier_threshold = 8.0);
     
+    // wld_pts: estimated points, has outliers
+    static bool estimateCameraPose(const vector<cv::Point3d> & camera_pts,
+                                   const vector<cv::Point3d> & wld_pts,
+                                   cv::Mat & camera_pose);
+    
     // pose estimation from a nearby location orientation image
     // using sift matching
     static bool estimateCameraPoseFromImageMatching(

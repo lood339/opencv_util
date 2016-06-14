@@ -93,6 +93,7 @@ void CvxIO::imwrite_xyz_to_8urgb(const char *file, const cv::Mat & xyz_img)
     
     cv::imwrite(file, rgb_img);
     printf("save to: %s\n", file);
+    
 }
 
 bool CvxIO::save_mat(const char *txtfile, const cv::Mat & mat)
