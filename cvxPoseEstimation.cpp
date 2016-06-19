@@ -370,7 +370,9 @@ bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pt
                                            cv::Mat & camera_pose)
 {
     assert(camera_pts.size() == wld_pts.size());
-    assert(camera_pts.size() > 500);
+    if (camera_pts.size() < 500) {
+        return false;
+    }
     
     const int num_iteration = 2048;
     int K = 1024;
@@ -471,9 +473,9 @@ bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pt
         
         for (int i = 0; i<losses.size(); i++) {
         //    printf("after: loss is %lf\n", losses[i].loss_);
-            printf("inlier number is %lu\n", losses[i].inlier_indices_.size());
+        //    printf("inlier number is %lu\n", losses[i].inlier_indices_.size());
         }
-        printf("\n\n");
+       // printf("\n\n");
         
         // refine by inliers
         for (int i = 0; i<losses.size(); i++) {
@@ -502,7 +504,7 @@ bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pt
     
     camera_pose = cv::Mat::eye(4, 4, CV_64F);
     losses[0].affine_.copyTo(camera_pose(cv::Rect(0, 0, 4, 3)));
-    cout<<"camera pose\n"<<camera_pose<<endl;
+    //cout<<"camera pose\n"<<camera_pose<<endl;
     
     return true;
 }
