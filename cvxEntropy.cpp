@@ -54,3 +54,13 @@ int CvxEntropy::argminEntropy(const vector<cv::Mat> & covs)
     cv::minMaxIdx(entropy, &minv, &maxv, &min_idx, &max_idx);
     return min_idx;
 }
+
+void CvxEntropy::duplicateMatrix(cv::Mat & inoutmat)
+{
+    assert(inoutmat.rows != 0);
+    
+    cv::Mat m;
+    inoutmat.copyTo(m);
+    m.push_back(inoutmat);
+    inoutmat = m;
+}

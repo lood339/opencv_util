@@ -85,6 +85,15 @@ public:
                                    const PreemptiveRANSAC3DParameter & param,
                                    cv::Mat & camera_pose);
     
+    // wld_pts: estimated points, had outliers
+    // inliers: inliers for the finale camera pose
+    static bool preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,
+                                   const vector<cv::Point3d> & wld_pts,
+                                   const PreemptiveRANSAC3DParameter & param,
+                                   cv::Mat & camera_pose,
+                                   vector<bool> & inliers);
+    
+    
     // angle_distance: degree
     static void poseDistance(const cv::Mat & src_pose,
                       const cv::Mat & dst_pose,

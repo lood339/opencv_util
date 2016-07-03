@@ -169,8 +169,79 @@ cv::Mat Ms7ScenesUtil::camera_depth_to_world_coordinate(const cv::Mat & camera_d
     return world_coordinate_img;
 }
 
+void
+Ms7ScenesUtil::camera_depth_to_camera_and_world_coordinate(const cv::Mat & camera_depth,
+                                                       const cv::Mat & camera_to_world_pose,
+                                                       cv::Mat & camera_coord,
+                                                       cv::Mat & world_coord,
+                                                       cv::Mat & mask)
+{
+    assert(camera_depth.type() == CV_64FC1);
+    
+    const int width  = camera_depth.cols;
+    const int height = camera_depth.rows;
+    Mat K = cv::Mat::eye(3, 3, CV_64F);
+    K.at<double>(0, 0) = 585.0;
+    K.at<double>(1, 1) = 585.0;
+    K.at<double>(0, 2) = 320.0;
+    K.at<double>(1, 2) = 240.0;
+    
+    Mat inv_K = K.inv();
+    
+    //cout<<"invet K is "<<inv_K<<endl;
+    
+    camera_coord = cv::Mat::zeros(height, width, CV_64FC3);
+    world_coord = cv::Mat::zeros(height, width, CV_64FC3);
+    Mat loc_img = cv::Mat::zeros(3, 1, CV_64F);
+    Mat loc_camera_h = cv::Mat::zeros(4, 1, CV_64F); // homography coordinate
+    mask = cv::Mat::ones(height, width, CV_8UC1);
+    for (int r = 0; r < height; r++) {
+        for (int c = 0; c < width; c++) {
+            double depth = camera_depth.at<double>(r, c)/1000.0; // to meter
+            if (depth == 65.535 || depth < 0.1 || depth > 10.0) {
+                mask.at<unsigned char>(r, c) = 0;
+                continue;
+            }
+            loc_img.at<double>(0, 0) = c;
+            loc_img.at<double>(1, 0) = r;
+            loc_img.at<double>(2, 0) = 1.0;
+            Mat loc_camera = inv_K * loc_img;
+            double local_z = loc_camera.at<double>(2, 0);
+            double scale = depth/local_z;
+            //cout<<"scale is "<<scale<<endl;
+            loc_camera_h.at<double>(0, 0) = loc_camera.at<double>(0, 0) * scale;
+            loc_camera_h.at<double>(1, 0) = loc_camera.at<double>(1, 0) * scale;
+            loc_camera_h.at<double>(2, 0) = loc_camera.at<double>(2, 0) * scale;
+            loc_camera_h.at<double>(3, 0) = 1.0;
+            
+            // camera coordinate
+            camera_coord.at<cv::Vec3d>(r, c)[0] = loc_camera_h.at<double>(0, 0);
+            camera_coord.at<cv::Vec3d>(r, c)[1] = loc_camera_h.at<double>(1, 0);
+            camera_coord.at<cv::Vec3d>(r, c)[2] = loc_camera_h.at<double>(2, 0);
+            
+            Mat x_world = camera_to_world_pose * loc_camera_h;
+            x_world /= x_world.at<double>(3, 0);
+            world_coord.at<cv::Vec3d>(r, c)[0] = x_world.at<double>(0, 0);
+            world_coord.at<cv::Vec3d>(r, c)[1] = x_world.at<double>(1, 0);
+            world_coord.at<cv::Vec3d>(r, c)[2] = x_world.at<double>(2, 0);
+        }
+    }
+}
+
 cv::Mat
-Ms7ScenesUtil::camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_img,                                                
+Ms7ScenesUtil::camera_matrix()
+{
+    Mat K = cv::Mat::eye(3, 3, CV_64F);
+    K.at<double>(0, 0) = 585.0;
+    K.at<double>(1, 1) = 585.0;
+    K.at<double>(0, 2) = 320.0;
+    K.at<double>(1, 2) = 240.0;
+    
+    return K;   
+}
+
+cv::Mat
+Ms7ScenesUtil::camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_img,
                                                  cv::Mat & mask)
 {
     assert(camera_depth_img.type() == CV_64FC1);
