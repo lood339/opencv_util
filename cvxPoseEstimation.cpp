@@ -891,6 +891,13 @@ void CvxPoseEstimation::poseDistance(const cv::Mat & src_pose,
     euclidean_disance = sqrt(euclidean_disance);
 }
 
+double CvxPoseEstimation::minCameraDistanceUnderAngularThreshold(const vector<cv::Mat> & database_camera_poses,
+                                              const cv::Mat & query_pose,
+                                              const double angularThreshold)
+{
+    return 10.0;    
+}
+
 Mat CvxPoseEstimation::rotationToQuaternion(const cv::Mat & rot)
 {
     assert(rot.type() == CV_64FC1);

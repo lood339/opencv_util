@@ -108,6 +108,16 @@ public:
                       double & angle_distance,
                       double & euclidean_disance);
     
+    //
+    // database_camera_poses: camera pose 4x4 64FC1
+    // query_pose: query camera pose
+    // angularThreshold: angular threshold, default value 10 degrees
+    // return: smallest camera distance when the camera angular is smaller than the angular threshold, in meter
+    static double minCameraDistanceUnderAngularThreshold(const vector<cv::Mat> & database_camera_poses,
+                                                         const cv::Mat & query_pose,
+                                                         const double angularThreshold = 0);
+                                                         
+    
     // 3x3 rotation matrix to eular angle
     static Mat rotationToEularAngle(const cv::Mat & rot);
     
