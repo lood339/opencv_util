@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "cvxImage_310.hpp"
 #include <vector>
-#include <vil/vil_image_view.h>
+//#include <vil/vil_image_view.h>
 
 using std::vector;
 
@@ -61,6 +61,7 @@ public:
     
     // pose estimation from a nearby location orientation image
     // using sift matching
+    /*
     static bool estimateCameraPoseFromImageMatching(
                                                     const cv::Mat & camera_matrix,
                                                     const cv::Mat & dist_coeff,
@@ -70,6 +71,7 @@ public:
                                                     const cv::Mat & database_pose,
                                                     cv::Mat & estimated_pose,
                                                     const int min_matching_num = 50);
+     */
     
     // wld_pts: estimated points, has outliers
     static bool preemptiveRANSAC(const vector<cv::Point2d> & img_pts,

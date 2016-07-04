@@ -8,8 +8,8 @@
 
 #include "cvxPoseEstimation.hpp"
 #include <iostream>
-#include "vl_sift_feature.h"
-#include "vgl_fundamental_ransac.hpp"
+//#include "vl_sift_feature.h"
+//#include "vgl_fundamental_ransac.hpp"
 #include "RGBGUtil.hpp"
 #include "cvxCalib3d.hpp"
 
@@ -92,6 +92,7 @@ bool CvxPoseEstimation::estimateCameraPose(const vector<cv::Point3d> & camera_pt
     return is_solved;
 }
 
+/*
 bool CvxPoseEstimation::estimateCameraPoseFromImageMatching(const cv::Mat & camera_matrix,
                                                             const cv::Mat & dist_coeff,
                                                             const vil_image_view<vxl_byte> & query_rgb_image,
@@ -158,6 +159,7 @@ bool CvxPoseEstimation::estimateCameraPoseFromImageMatching(const cv::Mat & came
     bool is_estimated = CvxPoseEstimation::estimateCameraPose(camera_matrix, dist_coeff, valid_query_locations, wld_pts, estimated_pose, 6.0);
     return is_estimated;
 }
+ */
 
 struct HypotheseLoss
 {
