@@ -85,6 +85,14 @@ public:
                                    const PreemptiveRANSAC3DParameter & param,
                                    cv::Mat & camera_pose);
     
+    // camera_pts: camera coordinate locations
+    // wld_pts: corresonding world coordinate locations, estimated points, had outliers, multiple choices
+    //
+    static bool preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & camera_pts,
+                                            const vector<vector<cv::Point3d>> & candidate_wld_pts,
+                                            const PreemptiveRANSAC3DParameter & param,
+                                            cv::Mat & camera_pose);
+    
     // wld_pts: estimated points, had outliers
     // inliers: inliers for the finale camera pose
     static bool preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,
