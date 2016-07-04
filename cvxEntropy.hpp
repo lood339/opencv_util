@@ -30,6 +30,9 @@ public:
     // index of minimum entropy
     static int argminEntropy(const vector<cv::Mat> & covs);
     
+    // duplicate the row of mat
+    static void duplicateMatrix(cv::Mat & inoutmat);
+    
     
 };
 

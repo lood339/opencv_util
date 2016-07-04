@@ -85,11 +85,38 @@ public:
                                    const PreemptiveRANSAC3DParameter & param,
                                    cv::Mat & camera_pose);
     
+    // camera_pts: camera coordinate locations
+    // wld_pts: corresonding world coordinate locations, estimated points, had outliers, multiple choices
+    //
+    static bool preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & camera_pts,
+                                            const vector<vector<cv::Point3d>> & candidate_wld_pts,
+                                            const PreemptiveRANSAC3DParameter & param,
+                                            cv::Mat & camera_pose);
+    
+    // wld_pts: estimated points, had outliers
+    // inliers: inliers for the finale camera pose
+    static bool preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,
+                                   const vector<cv::Point3d> & wld_pts,
+                                   const PreemptiveRANSAC3DParameter & param,
+                                   cv::Mat & camera_pose,
+                                   vector<bool> & inliers);
+    
+    
     // angle_distance: degree
     static void poseDistance(const cv::Mat & src_pose,
                       const cv::Mat & dst_pose,
                       double & angle_distance,
                       double & euclidean_disance);
+    
+    //
+    // database_camera_poses: camera pose 4x4 64FC1
+    // query_pose: query camera pose
+    // angularThreshold: angular threshold, default value 10 degrees
+    // return: smallest camera distance when the camera angular is smaller than the angular threshold, in meter
+    static double minCameraDistanceUnderAngularThreshold(const vector<cv::Mat> & database_camera_poses,
+                                                         const cv::Mat & query_pose,
+                                                         const double angularThreshold = 0);
+                                                         
     
     // 3x3 rotation matrix to eular angle
     static Mat rotationToEularAngle(const cv::Mat & rot);

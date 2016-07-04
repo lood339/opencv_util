@@ -140,9 +140,40 @@ bool CvxIO::load_mat(const char *txtfile, cv::Mat & mat)
     return true;
 }
 
-vector<string> CvxIO::read_files(const char *dir_name)
+bool CvxIO::write_mat(FILE *pf, const cv::Mat & mat)
 {
+    assert(pf);
+    fprintf(pf, "%d %d\n", mat.rows, mat.cols);
+    for (int y = 0; y < mat.rows; y++) {
+        for (int x = 0; x< mat.cols; x++) {
+            fprintf(pf, "%lf ", mat.at<double>(y, x));
+        }
+        fprintf(pf, "\n");
+    }
+    return true;
     
+}
+bool CvxIO::read_mat(FILE *pf, cv::Mat & mat)
+{
+    int h = 0;
+    int w = 0;
+    int num = fscanf(pf, "%d %d", &h, &w);
+    assert(num == 2);
+    mat = cv::Mat::zeros(h, w, CV_64FC1);
+    for (int y = 0; y<h; y++) {
+        for (int x = 0; x<w; x++) {
+            double val = 0;
+            num = fscanf(pf, "%lf", &val);
+            assert(num ==1);
+            mat.at<double>(y, x) = val;
+        }
+    }
+    return true;
+}
+
+
+vector<string> CvxIO::read_files(const char *dir_name)
+{    
     const char *post_fix = strrchr(dir_name, '.');
     string pre_str(dir_name);
     pre_str = pre_str.substr(0, pre_str.rfind('/') + 1);

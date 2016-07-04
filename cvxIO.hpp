@@ -41,6 +41,9 @@ public:
     static bool save_mat(const char *txtfile, const cv::Mat & mat);
     static bool load_mat(const char *txtfile, cv::Mat & mat);
     
+    static bool write_mat(FILE *pf, const cv::Mat & mat);
+    static bool read_mat(FILE *pf, cv::Mat & mat);
+    
     // dir_name = "/Users/jimmy/*.txt"
     static vector<string> read_files(const char *dir_name);
 };

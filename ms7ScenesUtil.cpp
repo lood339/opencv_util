@@ -173,8 +173,79 @@ cv::Mat Ms7ScenesUtil::camera_depth_to_world_coordinate(const cv::Mat & camera_d
     return world_coordinate_img;
 }
 
+void
+Ms7ScenesUtil::camera_depth_to_camera_and_world_coordinate(const cv::Mat & camera_depth,
+                                                       const cv::Mat & camera_to_world_pose,
+                                                       cv::Mat & camera_coord,
+                                                       cv::Mat & world_coord,
+                                                       cv::Mat & mask)
+{
+    assert(camera_depth.type() == CV_64FC1);
+    
+    const int width  = camera_depth.cols;
+    const int height = camera_depth.rows;
+    Mat K = cv::Mat::eye(3, 3, CV_64F);
+    K.at<double>(0, 0) = 585.0;
+    K.at<double>(1, 1) = 585.0;
+    K.at<double>(0, 2) = 320.0;
+    K.at<double>(1, 2) = 240.0;
+    
+    Mat inv_K = K.inv();
+    
+    //cout<<"invet K is "<<inv_K<<endl;
+    
+    camera_coord = cv::Mat::zeros(height, width, CV_64FC3);
+    world_coord = cv::Mat::zeros(height, width, CV_64FC3);
+    Mat loc_img = cv::Mat::zeros(3, 1, CV_64F);
+    Mat loc_camera_h = cv::Mat::zeros(4, 1, CV_64F); // homography coordinate
+    mask = cv::Mat::ones(height, width, CV_8UC1);
+    for (int r = 0; r < height; r++) {
+        for (int c = 0; c < width; c++) {
+            double depth = camera_depth.at<double>(r, c)/1000.0; // to meter
+            if (depth == 65.535 || depth < 0.1 || depth > 10.0) {
+                mask.at<unsigned char>(r, c) = 0;
+                continue;
+            }
+            loc_img.at<double>(0, 0) = c;
+            loc_img.at<double>(1, 0) = r;
+            loc_img.at<double>(2, 0) = 1.0;
+            Mat loc_camera = inv_K * loc_img;
+            double local_z = loc_camera.at<double>(2, 0);
+            double scale = depth/local_z;
+            //cout<<"scale is "<<scale<<endl;
+            loc_camera_h.at<double>(0, 0) = loc_camera.at<double>(0, 0) * scale;
+            loc_camera_h.at<double>(1, 0) = loc_camera.at<double>(1, 0) * scale;
+            loc_camera_h.at<double>(2, 0) = loc_camera.at<double>(2, 0) * scale;
+            loc_camera_h.at<double>(3, 0) = 1.0;
+            
+            // camera coordinate
+            camera_coord.at<cv::Vec3d>(r, c)[0] = loc_camera_h.at<double>(0, 0);
+            camera_coord.at<cv::Vec3d>(r, c)[1] = loc_camera_h.at<double>(1, 0);
+            camera_coord.at<cv::Vec3d>(r, c)[2] = loc_camera_h.at<double>(2, 0);
+            
+            Mat x_world = camera_to_world_pose * loc_camera_h;
+            x_world /= x_world.at<double>(3, 0);
+            world_coord.at<cv::Vec3d>(r, c)[0] = x_world.at<double>(0, 0);
+            world_coord.at<cv::Vec3d>(r, c)[1] = x_world.at<double>(1, 0);
+            world_coord.at<cv::Vec3d>(r, c)[2] = x_world.at<double>(2, 0);
+        }
+    }
+}
+
 cv::Mat
-Ms7ScenesUtil::camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_img,                                                
+Ms7ScenesUtil::camera_matrix()
+{
+    Mat K = cv::Mat::eye(3, 3, CV_64F);
+    K.at<double>(0, 0) = 585.0;
+    K.at<double>(1, 1) = 585.0;
+    K.at<double>(0, 2) = 320.0;
+    K.at<double>(1, 2) = 240.0;
+    
+    return K;   
+}
+
+cv::Mat
+Ms7ScenesUtil::camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_img,
                                                  cv::Mat & mask)
 {
     assert(camera_depth_img.type() == CV_64FC1);
@@ -345,6 +416,84 @@ bool Ms7ScenesUtil::load_prediction_result_with_color(const char *file_name,
     }
     fclose(pf);
     printf("read %lu prediction and ground truth points.\n", wld_pts_gt.size());
+    return true;
+}
+
+bool Ms7ScenesUtil::load_prediction_result_with_color(const char *file_name,
+                                                      string & rgb_img_file,
+                                                      string & depth_img_file,
+                                                      string & camera_pose_file,
+                                                      vector<cv::Point2d> & img_pts,
+                                                      vector<cv::Point3d> & wld_pts_gt,
+                                                      vector<vector<cv::Point3d> > & candidate_wld_pts_pred,
+                                                      vector<cv::Vec3d> & color_sample,
+                                                      vector<vector<cv::Vec3d> > & candidate_color_pred)
+{
+    assert(file_name);
+    FILE *pf = fopen(file_name, "r");
+    if (!pf) {
+        printf("Error, can not read from %s\n", file_name);
+        return false;
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s", buf);
+        rgb_img_file = string(buf);
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s", buf);
+        depth_img_file = string(buf);
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s\n", buf);   // remove the last \n
+        camera_pose_file = string(buf);
+    }
+    
+    {
+        char dummy_buf[1024] = {NULL};
+        fgets(dummy_buf, sizeof(dummy_buf), pf);
+        printf("%s\n", dummy_buf);
+    }
+    
+    while (1) {
+        double val[8] = {0.0};
+        int ret = fscanf(pf, "%lf %lf %lf %lf %lf %lf %lf %lf", &val[0], &val[1],
+                         &val[2], &val[3], &val[4],
+                         &val[5], &val[6], &val[7]);
+        if (ret != 8) {
+            break;
+        }
+        img_pts.push_back(cv::Point2d(val[0], val[1]));
+        wld_pts_gt.push_back(cv::Point3d(val[2], val[3], val[4]));
+        color_sample.push_back(cv::Vec3d(val[5], val[6], val[7]));
+        
+        int num = 0;
+        ret = fscanf(pf, "%d", &num);
+        assert(ret == 1);
+        
+        vector<cv::Point3d> wld_pts_pred;
+        vector<cv::Vec3d> color_pred;
+        for (int i = 0; i<num; i++) {
+            ret = fscanf(pf, "%lf %lf %lf %lf %lf %lf", &val[0], &val[1], &val[2], &val[3], &val[4], &val[5]);
+            assert(ret == 6);
+            wld_pts_pred.push_back(cv::Point3d(val[0], val[1], val[2]));
+            color_pred.push_back(cv::Vec3d(val[3], val[4], val[5]));
+        }
+        candidate_wld_pts_pred.push_back(wld_pts_pred);
+        candidate_color_pred.push_back(color_pred);
+    }
+    fclose(pf);
+    
+    assert(img_pts.size() == wld_pts_gt.size());
+    assert(img_pts.size() == candidate_wld_pts_pred.size());
+    assert(img_pts.size() == candidate_color_pred.size());
+    printf("read %lu prediction and ground truth points.\n", wld_pts_gt.size());
+    
     return true;
 }
 

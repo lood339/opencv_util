@@ -29,6 +29,7 @@ bool CvxPoseEstimation::estimateCameraPose(const cv::Mat & camera_matrix,
     Mat rvec;
     Mat tvec;
     bool is_solved = cv::solvePnPRansac(Mat(wld_pts), Mat(im_pts), camera_matrix, Mat(), rvec, tvec, false, 1000, outlier_threshold);
+//    bool is_solved = cv::solvePnP(Mat(wld_pts), Mat(im_pts), camera_matrix, dist_coeff, rvec, tvec, false, CV_EPNP);
     if (!is_solved) {
         printf("warning: solver PnP failed.\n");
         return false;
@@ -164,7 +165,8 @@ struct HypotheseLoss
     Mat rvec_;       // rotation     for 3D --> 2D projection
     Mat tvec_;       // translation  for 3D --> 2D projection
     Mat affine_;     //              for 3D --> 3D camera to world transformation
-    vector<unsigned int> inlier_indices_;
+    vector<unsigned int> inlier_indices_;         // camera coordinate index
+    vector<unsigned int> inlier_candidate_world_pts_indices_; // candidate world point index
     
     HypotheseLoss()
     {
@@ -183,9 +185,18 @@ struct HypotheseLoss
         affine_ = other.affine_;
         inlier_indices_.clear();
         inlier_indices_.resize(other.inlier_indices_.size());
+        inlier_candidate_world_pts_indices_.clear();
+        inlier_candidate_world_pts_indices_.resize(other.inlier_candidate_world_pts_indices_.size());
         for(int i = 0; i<other.inlier_indices_.size(); i++) {
             inlier_indices_[i] = other.inlier_indices_[i];
         }
+        for(int i = 0; i<other.inlier_candidate_world_pts_indices_.size(); i++){
+            inlier_candidate_world_pts_indices_[i] = other.inlier_candidate_world_pts_indices_[i];
+        }
+        if(inlier_candidate_world_pts_indices_.size() != 0){
+            assert(inlier_indices_.size() == inlier_candidate_world_pts_indices_.size());
+        }
+        
     }
     
     
@@ -205,8 +216,16 @@ struct HypotheseLoss
         affine_ = other.affine_;
         inlier_indices_.clear();
         inlier_indices_.resize(other.inlier_indices_.size());
+        inlier_candidate_world_pts_indices_.clear();
+        inlier_candidate_world_pts_indices_.resize(other.inlier_candidate_world_pts_indices_.size());
         for(int i = 0; i<other.inlier_indices_.size(); i++) {
             inlier_indices_[i] = other.inlier_indices_[i];
+        }
+        for(int i = 0; i<other.inlier_candidate_world_pts_indices_.size(); i++){
+            inlier_candidate_world_pts_indices_[i] = other.inlier_candidate_world_pts_indices_[i];
+        }
+        if(inlier_candidate_world_pts_indices_.size() != 0){
+            assert(inlier_indices_.size() == inlier_candidate_world_pts_indices_.size());
         }
         return *this;
     }
@@ -229,7 +248,6 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
     
     vector<std::pair<Mat, Mat> > rt_candidate;
     for (int i = 0; i<num_iteration; i++) {
-        
         int k1 = 0;
         int k2 = 0;
         int k3 = 0;
@@ -249,14 +267,16 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
         sampled_img_pts.push_back(img_pts[k1]);
         sampled_img_pts.push_back(img_pts[k2]);
         sampled_img_pts.push_back(img_pts[k3]);
+        sampled_img_pts.push_back(img_pts[k4]);
         
         sampled_wld_pts.push_back(wld_pts[k1]);
         sampled_wld_pts.push_back(wld_pts[k2]);
         sampled_wld_pts.push_back(wld_pts[k3]);
+        sampled_wld_pts.push_back(wld_pts[k4]);
         
         Mat rvec;
         Mat tvec;
-        bool is_solved = cv::solvePnP(Mat(sampled_wld_pts), Mat(sampled_img_pts), camera_matrix, dist_coeff, rvec, tvec, false, CV_EPNP);
+        bool is_solved = cv::solvePnP(Mat(sampled_wld_pts), Mat(sampled_img_pts), camera_matrix, dist_coeff, rvec, tvec, false, CV_P3P);
         if (is_solved) {
             rt_candidate.push_back(std::make_pair(rvec, tvec));
         }
@@ -296,8 +316,7 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
             // evaluate the accuracy by check reprojection error
             vector<cv::Point2d> projected_pts;
             cv::projectPoints(sampled_wld_pts, losses[i].rvec_, losses[i].tvec_, camera_matrix, dist_coeff, projected_pts);
-            // reset inlier
-            losses[i].inlier_indices_.clear();
+            
             for (int j = 0; j<projected_pts.size(); j++) {
                 cv::Point2d dif = projected_pts[j] - sampled_img_pts[j];
                 double dis = cv::norm(dif);
@@ -312,12 +331,6 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
         
         std::sort(losses.begin(), losses.end());
         losses.resize(losses.size()/2);
-        
-        
-        for (int j = 0; j<losses.size(); j++) {
-            printf("after: loss is %lf\n", losses[j].loss_);
-        }
-        printf("\n\n");
         
         // refine by inliers
         for (int i = 0; i<losses.size(); i++) {
@@ -335,6 +348,7 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
                 Mat tvec = losses[i].tvec_;
                 bool is_solved = cv::solvePnP(Mat(inlier_wld_pts), Mat(inlier_img_pts), camera_matrix, dist_coeff, rvec, tvec, true, CV_EPNP);  // CV_ITERATIVE   CV_EPNP
                 if (is_solved) {
+                     losses[i].inlier_indices_.clear();
                     losses[i].rvec_ = rvec;
                     losses[i].tvec_ = tvec;
                 }
@@ -348,6 +362,9 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
     Mat rot;
     cv::Rodrigues(losses.front().rvec_, rot);
     Mat tvec = losses.front().tvec_;
+    assert(tvec.rows == 3);
+    assert(tvec.type() == CV_64FC1);
+    
     camera_pose = cv::Mat::eye(4, 4, CV_64F);
     for (int j = 0; j<3; j++) {
         for (int i = 0; i<3; i++) {
@@ -504,10 +521,308 @@ bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pt
     
     camera_pose = cv::Mat::eye(4, 4, CV_64F);
     losses[0].affine_.copyTo(camera_pose(cv::Rect(0, 0, 4, 3)));
+    //cout<<"camera pose\n"<<camera_pose<<endl;    
+    return true;
+}
+
+bool CvxPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & camera_pts,
+                                                    const vector<vector<cv::Point3d>> & candidate_wld_pts,
+                                                    const PreemptiveRANSAC3DParameter & param,
+                                                    cv::Mat & camera_pose)
+{
+    assert(camera_pts.size() == candidate_wld_pts.size());
+    if (camera_pts.size() < 500) {
+        return false;
+    }
+    
+    const int num_iteration = 2048;
+    int K = 1024;
+    const int N = (int)camera_pts.size();
+    const int B = 500;
+    
+    vector<cv::Mat > affine_candidate;
+    for (int i = 0; i<num_iteration; i++) {
+        
+        int k1 = 0;
+        int k2 = 0;
+        int k3 = 0;
+        int k4 = 0;
+        
+        do{
+            k1 = rand()%N;
+            k2 = rand()%N;
+            k3 = rand()%N;
+            k4 = rand()%N;
+        }while (k1 == k2 || k1 == k3 || k1 == k4 ||
+                k2 == k3 || k2 == k4 || k3 == k4);
+        
+        vector<cv::Point3d> sampled_camera_pts;
+        vector<cv::Point3d> sampled_wld_pts;
+        
+        sampled_camera_pts.push_back(camera_pts[k1]);
+        sampled_camera_pts.push_back(camera_pts[k2]);
+        sampled_camera_pts.push_back(camera_pts[k3]);
+        sampled_camera_pts.push_back(camera_pts[k4]);
+        
+        sampled_wld_pts.push_back(candidate_wld_pts[k1][0]);
+        sampled_wld_pts.push_back(candidate_wld_pts[k2][0]);
+        sampled_wld_pts.push_back(candidate_wld_pts[k3][0]);
+        sampled_wld_pts.push_back(candidate_wld_pts[k4][0]);
+        
+        Mat affine;
+        Mat inlier;
+        CvxCalib3D::KabschTransform(sampled_camera_pts, sampled_wld_pts, affine);
+        affine_candidate.push_back(affine);
+        if (affine_candidate.size() > K) {
+            printf("initialization repeat %d times\n", i);
+            break;
+        }
+    }
+    printf("init camera parameter number is %lu\n", affine_candidate.size());
+    
+    vector<HypotheseLoss> losses;
+    for (int i = 0; i<affine_candidate.size(); i++) {
+        HypotheseLoss hyp(0.0);
+        hyp.affine_ = affine_candidate[i];
+        losses.push_back(hyp);
+    }
+    
+    double threshold = param.dis_threshold_;
+    while (losses.size() > 1) {
+        // sample random set
+        vector<cv::Point3d> sampled_camera_pts;
+        vector< vector<cv::Point3d> > sampled_wld_pts;  // one camera point may have multiple world points correspondences
+        vector<int> sampled_indices;
+        for (int i =0; i<B; i++) {
+            int index = rand()%N;
+            sampled_camera_pts.push_back(camera_pts[index]);
+            sampled_wld_pts.push_back(candidate_wld_pts[index]);
+            sampled_indices.push_back(index);
+        }
+        
+        // count outliers
+        for (int i = 0; i<losses.size(); i++) {
+            // evaluate the accuracy by check transformation
+            vector<cv::Point3d> transformed_pts;
+            CvxCalib3D::rigidTransform(sampled_camera_pts, losses[i].affine_, transformed_pts);
+            
+            // check minimum distance from transformed points to world coordiante
+            for (int j = 0; j<transformed_pts.size(); j++) {
+                double min_dis = threshold * 2;
+                int min_index = -1;
+                for (int k = 0; k<sampled_wld_pts[j].size(); k++) {
+                    cv::Point3d dif = transformed_pts[j] - sampled_wld_pts[j][k];
+                    double dis = cv::norm(dif);
+                    if (dis < min_dis) {
+                        min_dis = dis;
+                        min_index = k;
+                    }
+                } // end of k
+                
+                if (min_dis > threshold) {
+                    losses[i].loss_ += 1.0;
+                }
+                else {
+                    losses[i].inlier_indices_.push_back(sampled_indices[j]);
+                    losses[i].inlier_candidate_world_pts_indices_.push_back(min_index);
+                }
+            } // end of j
+            assert(losses[i].inlier_indices_.size() == losses[i].inlier_candidate_world_pts_indices_.size());
+            // printf("inlier number is %lu\n", losses[i].inlier_indices_.size());
+        }
+        //getchar();
+        
+        std::sort(losses.begin(), losses.end());
+        losses.resize(losses.size()/2);
+        
+        for (int i = 0; i<losses.size(); i++) {
+         //   printf("after: loss is %lf\n", losses[i].loss_);
+         //   printf("inlier number is %lu\n", losses[i].inlier_indices_.size());
+        }
+        // printf("\n\n");
+        
+        // refine by inliers
+        for (int i = 0; i<losses.size(); i++) {
+            // number of inliers is larger than minimum configure
+            if (losses[i].inlier_indices_.size() > 4) {
+                vector<cv::Point3d> inlier_camera_pts;
+                vector<cv::Point3d> inlier_wld_pts;
+                for (int j = 0; j < losses[i].inlier_indices_.size(); j++) {
+                    int index = losses[i].inlier_indices_[j];
+                    int wld_index = losses[i].inlier_candidate_world_pts_indices_[j];
+                    inlier_camera_pts.push_back(camera_pts[index]);
+                    inlier_wld_pts.push_back(candidate_wld_pts[index][wld_index]);
+                }
+                Mat affine;
+                Mat inlier;
+                
+                CvxCalib3D::KabschTransform(inlier_camera_pts, inlier_wld_pts, affine);
+                losses[i].affine_ = affine;
+                losses[i].inlier_indices_.clear();
+                losses[i].inlier_candidate_world_pts_indices_.clear();
+            }
+        }
+    }
+    assert(losses.size() == 1);
+    
+    camera_pose = cv::Mat::eye(4, 4, CV_64F);
+    losses[0].affine_.copyTo(camera_pose(cv::Rect(0, 0, 4, 3)));
+    //cout<<"camera pose\n"<<camera_pose<<endl;
+    return true;
+}
+
+bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,
+                                           const vector<cv::Point3d> & wld_pts,
+                                           const PreemptiveRANSAC3DParameter & param,
+                                           cv::Mat & camera_pose,
+                                           vector<bool> & inliers)
+{
+    assert(camera_pts.size() == wld_pts.size());
+    if (camera_pts.size() < 500) {
+        return false;
+    }
+    
+    const int num_iteration = 2048;
+    int K = 1024;
+    const int N = (int)camera_pts.size();
+    const int B = 500;
+    
+    vector<cv::Mat > affine_candidate;
+    for (int i = 0; i<num_iteration; i++) {
+        
+        int k1 = 0;
+        int k2 = 0;
+        int k3 = 0;
+        int k4 = 0;
+        
+        do{
+            k1 = rand()%N;
+            k2 = rand()%N;
+            k3 = rand()%N;
+            k4 = rand()%N;
+        }while (k1 == k2 || k1 == k3 || k1 == k4 ||
+                k2 == k3 || k2 == k4 || k3 == k4);
+        
+        vector<cv::Point3d> sampled_camera_pts;
+        vector<cv::Point3d> sampled_wld_pts;
+        
+        sampled_camera_pts.push_back(camera_pts[k1]);
+        sampled_camera_pts.push_back(camera_pts[k2]);
+        sampled_camera_pts.push_back(camera_pts[k3]);
+        sampled_camera_pts.push_back(camera_pts[k4]);
+        
+        sampled_wld_pts.push_back(wld_pts[k1]);
+        sampled_wld_pts.push_back(wld_pts[k2]);
+        sampled_wld_pts.push_back(wld_pts[k3]);
+        sampled_wld_pts.push_back(wld_pts[k4]);
+        
+        Mat affine;
+        Mat inlier;
+        //bool is_solved = cv::estimateAffine3D(Mat(sampled_camera_pts), Mat(sampled_wld_pts), affine, inlier, 0.9);
+        CvxCalib3D::KabschTransform(sampled_camera_pts, sampled_wld_pts, affine);
+        bool is_solved = true;
+        if (is_solved)
+        {
+            affine_candidate.push_back(affine);
+        }
+        if (affine_candidate.size() > K) {
+            printf("initialization repeat %d times\n", i);
+            break;
+        }
+    }
+    printf("init camera parameter number is %lu\n", affine_candidate.size());
+    
+    vector<HypotheseLoss> losses;
+    for (int i = 0; i<affine_candidate.size(); i++) {
+        HypotheseLoss hyp(0.0);
+        hyp.affine_ = affine_candidate[i];
+        losses.push_back(hyp);
+    }
+    
+    double threshold = param.dis_threshold_;
+    while (losses.size() > 1) {
+        // sample random set
+        vector<cv::Point3d> sampled_camera_pts;
+        vector<cv::Point3d> sampled_wld_pts;
+        vector<int> sampled_indices;
+        for (int i =0; i<B; i++) {
+            int index = rand()%N;
+            sampled_camera_pts.push_back(camera_pts[index]);
+            sampled_wld_pts.push_back(wld_pts[index]);
+            sampled_indices.push_back(index);
+        }
+        
+        // count outliers
+        for (int i = 0; i<losses.size(); i++) {
+            // evaluate the accuracy by check transformation
+            vector<cv::Point3d> transformed_pts;
+            CvxCalib3D::rigidTransform(sampled_camera_pts, losses[i].affine_, transformed_pts);
+            
+            // reset inlier index?
+            
+            //losses[i].inlier_indices_.clear();
+            for (int j = 0; j<transformed_pts.size(); j++) {
+                cv::Point3d dif = transformed_pts[j] - sampled_wld_pts[j];
+                double dis = cv::norm(dif);
+                //  cout<<" distance is "<<dis<<endl;
+                if (dis > threshold) {
+                    losses[i].loss_ += 1.0;
+                }
+                else  {
+                    losses[i].inlier_indices_.push_back(sampled_indices[j]);
+                }
+            } // end of j
+            // printf("inlier number is %lu\n", losses[i].inlier_indices_.size());
+        }
+        //getchar();
+        
+        std::sort(losses.begin(), losses.end());
+        losses.resize(losses.size()/2);
+        
+        for (int i = 0; i<losses.size(); i++) {
+            //    printf("after: loss is %lf\n", losses[i].loss_);
+            //    printf("inlier number is %lu\n", losses[i].inlier_indices_.size());
+        }
+        // printf("\n\n");
+        
+        // refine by inliers
+        for (int i = 0; i<losses.size(); i++) {
+            // number of inliers is larger than minimum configure
+            if (losses[i].inlier_indices_.size() > 4) {
+                vector<cv::Point3d> inlier_camera_pts;
+                vector<cv::Point3d> inlier_wld_pts;
+                for (int j = 0; j < losses[i].inlier_indices_.size(); j++) {
+                    int index = losses[i].inlier_indices_[j];
+                    inlier_camera_pts.push_back(camera_pts[index]);
+                    inlier_wld_pts.push_back(wld_pts[index]);
+                }
+                Mat affine;
+                Mat inlier;
+                //     bool is_solved = cv::estimateAffine3D(Mat(inlier_camera_pts), Mat(inlier_wld_pts), affine, inlier, 0.9);
+                CvxCalib3D::KabschTransform(inlier_camera_pts, inlier_wld_pts, affine);
+                bool is_solved = true;
+                if (is_solved && losses.size() > 1) {
+                    losses[i].affine_ = affine;
+                    losses[i].inlier_indices_.clear();
+                }
+            }
+        }
+    }
+    assert(losses.size() == 1);
+    
+    // inliers
+    inliers = vector<bool>(camera_pts.size(), false);
+    for (int i = 0; i<losses[0].inlier_indices_.size(); i++) {
+        inliers[losses[0].inlier_indices_[i]] = true;
+    }
+    
+    camera_pose = cv::Mat::eye(4, 4, CV_64F);
+    losses[0].affine_.copyTo(camera_pose(cv::Rect(0, 0, 4, 3)));
     //cout<<"camera pose\n"<<camera_pose<<endl;
     
     return true;
 }
+
 
 Mat CvxPoseEstimation::rotationToEularAngle(const cv::Mat & rot)
 {
@@ -574,6 +889,13 @@ void CvxPoseEstimation::poseDistance(const cv::Mat & src_pose,
     euclidean_disance += dy * dy;
     euclidean_disance += dz * dz;
     euclidean_disance = sqrt(euclidean_disance);
+}
+
+double CvxPoseEstimation::minCameraDistanceUnderAngularThreshold(const vector<cv::Mat> & database_camera_poses,
+                                              const cv::Mat & query_pose,
+                                              const double angularThreshold)
+{
+    return 10.0;    
 }
 
 Mat CvxPoseEstimation::rotationToQuaternion(const cv::Mat & rot)
