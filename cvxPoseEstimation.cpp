@@ -384,42 +384,32 @@ bool CvxPoseEstimation::preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
     return true;
 }
 
-//
-// database_camera_poses: camera pose 4x4 64FC1
-// query_pose: query camera pose
-// angularThreshold: angular threshold, default value 10 degrees
-// return: smallest camera distance when the camera angular is smaller than the angular threshold, in meter
+
 double CvxPoseEstimation::minCameraDistanceUnderAngularThreshold(const vector<cv::Mat> & database_camera_poses,
                                                      const cv::Mat & query_pose,
                                                      const double angular_threshold)
 {
-    vector<double> trans_dis_within_angular_threshold;
+    assert(database_camera_poses.size() > 0);
+    vector<double> distance;    
     
     for(int i=0; i<database_camera_poses.size();i++)
     {
         double rot_dis = 0.0;
-        double trans_dis = 0.0;
-        
+        double trans_dis = 0.0;        
         CvxPoseEstimation::poseDistance(query_pose,
                                         database_camera_poses[i],
                                         rot_dis,
                                         trans_dis);
-        if(rot_dis<angular_threshold)
-        {
-            trans_dis_within_angular_threshold.push_back(trans_dis);
+        if(rot_dis<angular_threshold) {
+            distance.push_back(trans_dis);
         }
     }
-    std::sort(trans_dis_within_angular_threshold.begin(), trans_dis_within_angular_threshold.end());
-    
-    if(trans_dis_within_angular_threshold.size()>0)
-    {
-        return trans_dis_within_angular_threshold[0];
+  
+    if (distance.size() == 0) {
+        return INT_MAX;
     }
-    else
-    {
-        cout<<"No camera poses is within the angular threshold, please increase the threshold, and we'll output 300.00 for remind"<<endl;
-        double error_flag=300.00;
-        return error_flag;
+    else {
+        return *std::min_element(distance.begin(), distance.end());
     }
 }
 
@@ -428,8 +418,8 @@ double CvxPoseEstimation::minCameraAngleUnderTranslationalThreshold(const vector
                                                                     const cv::Mat & query_pose,
                                                                     const double translation_threshold)
 {
-    vector<double> rot_dis_within_trans_threshold;
-    
+    assert(database_camera_poses.size() > 0);
+    vector<double> rot_distance;
     for(int i=0; i<database_camera_poses.size();i++)
     {
         double rot_dis = 0.0;
@@ -441,23 +431,15 @@ double CvxPoseEstimation::minCameraAngleUnderTranslationalThreshold(const vector
                                         trans_dis);
         if(trans_dis<translation_threshold)
         {
-            rot_dis_within_trans_threshold.push_back(rot_dis);
+            rot_distance.push_back(rot_dis);
         }
     }
-    std::sort(rot_dis_within_trans_threshold.begin(), rot_dis_within_trans_threshold.end());
-    
-    if(rot_dis_within_trans_threshold.size()>0)
-    {
-        return rot_dis_within_trans_threshold[0];
+    if (rot_distance.size() == 0) {
+        return INT_MAX;
     }
-    else
-    {
-        printf("No camera poses is within the translational threshold %lf meters, please increase the threshold, and we'll output 300.00 meters for remind\n", translation_threshold);
-        double error_flag=300.00;
-        return error_flag;
+    else {
+        return *std::min_element(rot_distance.begin(), rot_distance.end());
     }
-
-
 }
 
 bool CvxPoseEstimation::preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,
