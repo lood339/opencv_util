@@ -239,8 +239,7 @@ Ms7ScenesUtil::camera_matrix()
     K.at<double>(0, 0) = 585.0;
     K.at<double>(1, 1) = 585.0;
     K.at<double>(0, 2) = 320.0;
-    K.at<double>(1, 2) = 240.0;
-    
+    K.at<double>(1, 2) = 240.0;    
     return K;   
 }
 
