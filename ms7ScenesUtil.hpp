@@ -30,7 +30,7 @@ public:
     
     // invalid depth is 0.0
     static cv::Mat camera_depth_to_world_depth(const cv::Mat & camera_depth_img, const cv::Mat & pose);
-    
+        
     // camera_depth_img 16 bit
     // return CV_64_FC3 for x, y, z, unit in meter
     static cv::Mat camera_depth_to_world_coordinate(const cv::Mat & camera_depth_img, const cv::Mat & camera_to_world_pose);
@@ -45,11 +45,27 @@ public:
     // mask: CV_8UC1 0 --> invalid sample
     // return CV_64_FC3 for x, y, z, unit in meter
     static void camera_depth_to_camera_and_world_coordinate(const cv::Mat & camera_depth,
-                                                        const cv::Mat & camera_to_world_pose,
-                                                        cv::Mat & camera_coord,
-                                                        cv::Mat & world_coord,
-                                                        cv::Mat & mask);
+                                                            const cv::Mat & camera_to_world_pose,
+                                                            cv::Mat & camera_coord,
+                                                            cv::Mat & world_coord,
+                                                            cv::Mat & mask);
     
+    // camera_depth_img: CV_64FC1
+    // camera_to_world_pose: 4x4 CV_64FC1
+    // calibration_matrix: 3x3 CV_64FC1
+    // depth_factor: e.g. 1000.0 for MS 7 scenes
+    // camera_xyz: output camera coordinate location, CV_64FC3
+    // mask: output CV_8UC1 0 -- > invalid, 1 --> valid
+    // return: CV_64FC3 , x y z in world coordinate
+    static cv::Mat cameraDepthToWorldCoordinate(const cv::Mat & camera_depth_img,
+                                                const cv::Mat & camera_to_world_pose,
+                                                const cv::Mat & calibration_matrix,
+                                                const double depth_factor,
+                                                const double min_depth,
+                                                const double max_depth,
+                                                cv::Mat & camera_coordinate,
+                                                cv::Mat & mask);
+   
     static cv::Mat camera_matrix();
     
     
