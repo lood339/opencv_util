@@ -423,8 +423,7 @@ double CvxPoseEstimation::minCameraAngleUnderTranslationalThreshold(const vector
     for(int i=0; i<database_camera_poses.size();i++)
     {
         double rot_dis = 0.0;
-        double trans_dis = 0.0;
-        
+        double trans_dis = 0.0;        
         CvxPoseEstimation::poseDistance(query_pose,
                                         database_camera_poses[i],
                                         rot_dis,
