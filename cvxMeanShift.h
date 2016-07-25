@@ -40,11 +40,18 @@ class CvxMeanShift
 {
 public:
     // data: every row is a point
-    // modes: output
+    // modes: output row vector
     // wt: weight of each mode
     static int meanShift(const cv::Mat & data,
                          vector<cv::Mat> & modes,
                          vector<double> & wt,
+                         const CvxMeanShiftParameter & param);
+    
+    // only keep largest mode
+    static bool
+    meanShiftLargestMode(const cv::Mat & data,
+                         cv::Mat & mode,
+                         double & wt,
                          const CvxMeanShiftParameter & param);
     
 };

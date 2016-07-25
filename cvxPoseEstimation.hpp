@@ -131,8 +131,11 @@ public:
     // 3x3 rotation matrix to eular angle
     static Mat rotationToEularAngle(const cv::Mat & rot);
     
-    // return CV_64FC1 4*1
+    // return CV_64FC1 4x1
     static Mat rotationToQuaternion(const cv::Mat & rot);
+    
+    // return CV_64FC1 3x3
+    static Mat quaternionToRotation(const cv::Mat & q);
     
     
     

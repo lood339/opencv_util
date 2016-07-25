@@ -12,6 +12,7 @@
 //#include "vgl_fundamental_ransac.hpp"
 #include "RGBGUtil.hpp"
 #include "cvxCalib3d.hpp"
+#include <Eigen/Geometry>
 
 using std::cout;
 using std::endl;
@@ -1017,8 +1018,29 @@ Mat CvxPoseEstimation::rotationToQuaternion(const cv::Mat & rot)
     ret.at<double>(2, 0) = q2;
     ret.at<double>(3, 0) = q3;
     return ret;
+}
+
+Mat CvxPoseEstimation::quaternionToRotation(const cv::Mat & q)
+{
+    assert(q.type() == CV_64FC1);
+    assert(q.rows == 4);
+    assert(q.cols == 1);
     
+    double x = q.at<double>(0, 0);
+    double y = q.at<double>(1, 0);
+    double z = q.at<double>(2, 0);
+    double w = q.at<double>(3, 0);
     
+    Eigen::Quaterniond quat(w, x, y, z);
+    
+    Eigen::Matrix<double, 3, 3> eig_mat = quat.matrix();
+    cv::Mat rot = cv::Mat::zeros(3, 3, CV_64FC1);
+    for (int r = 0; r<3; r++) {
+        for (int c = 0; c<3; c++) {
+            rot.at<double>(r, c) = eig_mat(r, c);
+        }
+    }    
+    return rot;
 }
 
 

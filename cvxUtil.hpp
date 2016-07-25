@@ -45,6 +45,12 @@ public:
         return idx;
     }
     
+    // video input/ output
+    static double millisecondsFromIndex(const int index, const double fps)
+    {
+        return index * 1000.0/fps;
+    }
+    
 
     
 };
