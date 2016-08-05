@@ -39,10 +39,18 @@ public:
     static cv::Mat camera_depth_to_world_coordinate(const cv::Mat & camera_depth_img,
                                                     const cv::Mat & camera_to_world_pose,
                                                     cv::Mat & mask);
+    
+    
+   
+    
     // mask: CV_8UC1 0 --> invalid sample
-    static cv::Mat camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_img,                                                    
-                                                     cv::Mat & mask);
-    // mask: CV_8UC1 0 --> invalid sample
+    static cv::Mat  camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_img,
+                                                      const cv::Mat camera_matrix,
+                                                      const double depth_factor,
+                                                      const double min_depth,
+                                                      const double max_depth,
+                                                      cv::Mat & mask);
+    
     // return CV_64_FC3 for x, y, z, unit in meter
     static void camera_depth_to_camera_and_world_coordinate(const cv::Mat & camera_depth,
                                                             const cv::Mat & camera_to_world_pose,

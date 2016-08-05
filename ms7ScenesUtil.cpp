@@ -248,19 +248,17 @@ Ms7ScenesUtil::camera_matrix()
 
 cv::Mat
 Ms7ScenesUtil::camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_img,
+                                                 const cv::Mat camera_matrix,
+                                                 const double depth_factor,
+                                                 const double min_depth,
+                                                 const double max_depth,
                                                  cv::Mat & mask)
 {
     assert(camera_depth_img.type() == CV_64FC1);
     
     const int width  = camera_depth_img.cols;
-    const int height = camera_depth_img.rows;
-    Mat K = cv::Mat::eye(3, 3, CV_64F);
-    K.at<double>(0, 0) = 585.0;
-    K.at<double>(1, 1) = 585.0;
-    K.at<double>(0, 2) = 320.0;
-    K.at<double>(1, 2) = 240.0;
-    
-    Mat inv_K = K.inv();
+    const int height = camera_depth_img.rows; 
+    Mat inv_K = camera_matrix.inv();
     
     //cout<<"invet K is "<<inv_K<<endl;
     
@@ -270,8 +268,8 @@ Ms7ScenesUtil::camera_depth_to_camera_coordinate(const cv::Mat & camera_depth_im
     mask = cv::Mat::ones(height, width, CV_8UC1);
     for (int r = 0; r < height; r++) {
         for (int c = 0; c < width; c++) {
-            double camera_depth = camera_depth_img.at<double>(r, c)/1000.0; // to meter
-            if (camera_depth == 65.535 || camera_depth < 0.1 || camera_depth > 10.0) {
+            double camera_depth = camera_depth_img.at<double>(r, c)/depth_factor; // to meter
+            if ( camera_depth < min_depth || camera_depth > max_depth) {
                 // invalid depth
                 //printf("invalid depth %lf\n", camera_depth);
                 mask.at<unsigned char>(r, c) = 0;
@@ -320,7 +318,7 @@ cv::Mat Ms7ScenesUtil::cameraDepthToWorldCoordinate(const cv::Mat & camera_depth
     for (int r = 0; r < height; r++) {
         for (int c = 0; c < width; c++) {
             double camera_depth = camera_depth_img.at<double>(r, c)/depth_factor; // to meter
-            if (camera_depth < min_depth || max_depth > max_depth ) {
+            if (camera_depth < min_depth || camera_depth > max_depth ) {
                 // invalid depth
                 //printf("invalid depth %lf\n", camera_depth);
                 mask.at<unsigned char>(r, c) = 0;
@@ -609,7 +607,11 @@ vector<string> Ms7ScenesUtil::read_file_names(const char *file_name)
 {
     vector<string> file_names;
     FILE *pf = fopen(file_name, "r");
-    assert(pf);
+    if (!pf) {
+        printf("Error: can not read from %s\n", file_name);
+        assert(pf);
+        return vector<string>();
+    }
     while (1) {
         char line[1024] = {NULL};
         int ret = fscanf(pf, "%s", line);
