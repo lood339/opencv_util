@@ -320,7 +320,7 @@ cv::Mat Ms7ScenesUtil::cameraDepthToWorldCoordinate(const cv::Mat & camera_depth
     for (int r = 0; r < height; r++) {
         for (int c = 0; c < width; c++) {
             double camera_depth = camera_depth_img.at<double>(r, c)/depth_factor; // to meter
-            if (camera_depth < min_depth || max_depth > max_depth ) {
+            if (camera_depth < min_depth || camera_depth > max_depth ) {
                 // invalid depth
                 //printf("invalid depth %lf\n", camera_depth);
                 mask.at<unsigned char>(r, c) = 0;
