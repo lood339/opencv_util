@@ -136,10 +136,39 @@ void CvxImgProc::centroidOrientation(const Mat & img, const vector<cv::Point2d> 
     }
     
     // debug
-    for (int i = 0; i<umax.size(); i++) {
-        printf("%d ", umax[i]);
-    }
+    //printf("centroid orientation umax: ");
+    //for (int i = 0; i<umax.size(); i++) {
+    //    printf("%d ", umax[i]);
+    //}
+    //printf("\n");
     
     CentroidOrientationICAngles(img, pts, umax, halfPatchSize, angles);
 }
+
+void CvxImgProc::centroidOrientation(const Mat & img, const int patchSize, const int smoothSize, Mat & orientation)
+{
+    vector<cv::Point2d> pts;
+    for (int r = 0; r<img.rows; r++) {
+        for (int c = 0; c<img.cols; c++) {
+            pts.push_back(cv::Point2d(c, r));
+        }
+    }
+    
+    vector<float> angles;
+    CvxImgProc::centroidOrientation(img, pts, patchSize, angles);
+    
+    orientation = cv::Mat::zeros(img.rows, img.cols, CV_64FC1);
+    for (int r = 0; r<orientation.rows; r++) {
+        for (int c = 0; c<orientation.cols; c++) {
+            orientation.at<double>(r, c) = angles[r * orientation.cols + c];
+        }
+    }
+    
+    cv::GaussianBlur(orientation, orientation, cv::Size(smoothSize, smoothSize), 0.0, 0.0);
+}
+
+
+
+
+
 

@@ -32,6 +32,8 @@ public:
     static void centroidOrientation(const Mat & img, const vector<cv::Point2d> & pts, const int patchSize,
                                     vector<float> & angles);
     
+    static void centroidOrientation(const Mat & img, const int patchSize, const int smoothSize, Mat & orientation);
+    
 };
 
 #endif /* cvxImgProc_cpp */
