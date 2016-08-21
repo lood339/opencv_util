@@ -32,6 +32,7 @@ public:
     // unit: millimeter
     static bool imread_depth_16bit_to_64f(const char *filename, cv::Mat & depth_img);
     static bool imread_rgb_8u(const char *file_name, cv::Mat & rgb_img);
+    static bool imread_gray_8u(const char *file_name, cv::Mat & grey_img);
     
     // write depth image as 8u for visualization purpose
     static void imwrite_depth_8u(const char *file, const cv::Mat & depth_img);

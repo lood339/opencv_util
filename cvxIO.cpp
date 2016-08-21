@@ -49,6 +49,17 @@ bool CvxIO::imread_rgb_8u(const char *file_name, cv::Mat & rgb_img)
     return true;
 }
 
+bool CvxIO::imread_gray_8u(const char *file_name, cv::Mat & grey_img)
+{
+    grey_img = cv::imread(file_name, CV_LOAD_IMAGE_GRAYSCALE);
+    if (grey_img.empty()) {
+        printf("Error: can not read image from %s\n", file_name);
+        return false;
+    }
+    assert(grey_img.type() == CV_8UC1);
+    return true;
+}
+
 void CvxIO::imwrite_depth_8u(const char *file, const cv::Mat & depth_img)
 {
     assert(depth_img.type() == CV_32F || depth_img.type() == CV_64F);

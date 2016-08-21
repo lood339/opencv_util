@@ -167,6 +167,30 @@ void CvxImgProc::centroidOrientation(const Mat & img, const int patchSize, const
     cv::GaussianBlur(orientation, orientation, cv::Size(smoothSize, smoothSize), 0.0, 0.0);
 }
 
+Mat CvxImgProc::groupPatches(const vector<cv::Mat> & patches, int colNum)
+{
+    assert(patches.size() > 0);
+    
+    int rowNum = (int)patches.size()/colNum;
+    if (patches.size()%colNum != 0) {
+        rowNum++;
+    }
+    
+    int patch_w = patches[0].cols;
+    int patch_h = patches[0].rows;
+    
+    Mat img = cv::Mat::zeros(rowNum * patch_h, colNum * patch_w, patches[0].type());
+    for (int i = 0; i<patches.size(); i++) {
+        int r = i / colNum;
+        int c = i % colNum;
+        int sy = r * patch_h;
+        int sx = c * patch_w;
+        patches[i].copyTo(img(cv::Rect(sx, sy, patch_w, patch_h)));
+    }
+    
+    return img;
+}
+
 
 
 

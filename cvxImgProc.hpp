@@ -32,7 +32,12 @@ public:
     static void centroidOrientation(const Mat & img, const vector<cv::Point2d> & pts, const int patchSize,
                                     vector<float> & angles);
     
+    // smooth orientation using Gaussian filter
     static void centroidOrientation(const Mat & img, const int patchSize, const int smoothSize, Mat & orientation);
+    
+    // patch has same size
+    // rowNum: how many patches in a column
+    static Mat groupPatches(const vector<cv::Mat> & patches, int colNum);
     
 };
 
