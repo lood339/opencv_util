@@ -133,14 +133,8 @@ void CvxImgProc::centroidOrientation(const Mat & img, const vector<cv::Point2d> 
             ++v0;
         umax[v] = v0;
         ++v0;
-    }
+    }  
     
-    // debug
-    //printf("centroid orientation umax: ");
-    //for (int i = 0; i<umax.size(); i++) {
-    //    printf("%d ", umax[i]);
-    //}
-    //printf("\n");
     
     CentroidOrientationICAngles(img, pts, umax, halfPatchSize, angles);
 }
