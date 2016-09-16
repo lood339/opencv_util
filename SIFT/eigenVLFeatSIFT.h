@@ -84,7 +84,12 @@ public:
                                              const vector<cv::Point2d> & locatioins,
                                              vector<std::shared_ptr<sift_keypoint> > & keypoints,
                                              bool verbose = true);
-
+    
+    // return: each row is a feature, CV_F32C1
+    static cv::Mat descriptorToMat(const vector<std::shared_ptr<sift_keypoint> > & keypoints);
+    
+    static void descriptorToMatrix(const vector<std::shared_ptr<sift_keypoint> > & keypoints,
+                                   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> & matrix);
 };
 
 

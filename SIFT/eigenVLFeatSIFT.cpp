@@ -30,7 +30,7 @@ bool EigenVLFeatSIFT::extractSIFTKeypoint(const cv::Mat & image,
         grey = image;
     }
     else {
-        cv::cvtColor(image, grey, CV_8UC1);
+        cv::cvtColor(image, grey, CV_BGR2GRAY);
     }
     
     const int width  = grey.cols;
@@ -91,7 +91,7 @@ bool EigenVLFeatSIFT::extractSIFTKeypoint(const cv::Mat & image,
             break;
         }
         
-        printf("filter sigma0 sigman: %f %f, octave width %d \n", filt->sigma0, filt->sigman, filt->octave_width);
+      //  printf("filter sigma0 sigman: %f %f, octave width %d \n", filt->sigma0, filt->sigman, filt->octave_width);
         
         vl_sift_detect (filt);
         
@@ -130,7 +130,7 @@ bool EigenVLFeatSIFT::extractSIFTKeypoint(const cv::Mat & image,
                 keypoints.push_back(pKeypoint);
                 
                 if (!is_first) {
-                    printf("key point scale %f\n", curKey->sigma);
+                 //   printf("key point scale %f\n", curKey->sigma);
                     is_first = true;
                 }
             }
@@ -162,7 +162,7 @@ bool EigenVLFeatSIFT::extractKeypointAtLocations(const cv::Mat & image,
         grey = image;
     }
     else {
-        cv::cvtColor(image, grey, CV_8UC1);
+        cv::cvtColor(image, grey, CV_BGR2GRAY);
     }
     
     const int width  = grey.cols;
@@ -236,6 +236,35 @@ bool EigenVLFeatSIFT::extractKeypointAtLocations(const cv::Mat & image,
     }
     assert(keypoints.size() == locatioins.size());
     return true;
+}
+
+cv::Mat EigenVLFeatSIFT::descriptorToMat(const vector<std::shared_ptr<sift_keypoint> > & keypoints)
+{
+    cv::Mat features = cv::Mat((int)keypoints.size(), (int)keypoints[0]->descriptor().size(), CV_32FC1);
+    
+    for (int i = 0; i<keypoints.size(); i++) {
+        Eigen::VectorXf descriptor = keypoints[i]->descriptor();
+        for (int j = 0; j<descriptor.size(); j++) {
+            features.at<float>(i, j) = descriptor[j];
+        }
+    }
+    return features;
+}
+
+void EigenVLFeatSIFT::descriptorToMatrix(const vector<std::shared_ptr<sift_keypoint> > & keypoints,
+                                         Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> & matrix)
+{
+    assert(keypoints.size() > 0);
+    const int rows = (int)keypoints.size();
+    const int cols = (int)(keypoints[0]->descriptor().size());
+    matrix.resize(rows, cols);
+    
+    for (int i = 0; i<keypoints.size(); i++) {
+        Eigen::VectorXf feat = keypoints[i]->descriptor();
+        for (int j = 0; j<feat.size(); j++) {
+            matrix(i, j) = feat[j];
+        }
+    }
 }
 
 
