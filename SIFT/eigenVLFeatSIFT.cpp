@@ -13,7 +13,7 @@
 #include "sift_64.h"
 #include <vl/imopv.h>
 #include <iostream>
-#include "vl_detect.h"
+//#include "vl_detect.h"
 
 using std::cout;
 using std::endl;

@@ -31,13 +31,13 @@ public:
         
     }
     
-    void setData(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> & data)
+    void setData(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> & data, const int trees = 4)
     {
         assert(data.rows() > 0);
         dim_ = (int)data.cols();
         
         flann::Matrix<T> dataset(const_cast<T *>(data.data()), (int)data.rows(), dim_);
-        index_ = flann::Index< flann::L2<T> >(dataset, flann::KDTreeIndexParams(4));
+        index_ = flann::Index< flann::L2<T> >(dataset, flann::KDTreeIndexParams(trees));
         index_.buildIndex();
     }
     
