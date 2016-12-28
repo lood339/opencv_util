@@ -43,6 +43,30 @@ public:
                            const vector<cv::Point2f> & pts,
                            const cv::Scalar & color,
                            const int length = 5);
+    
+    template< class T>
+    static void draw_cross_template(cv::Mat & image, const vector<T> & pts, const cv::Scalar & color, const int length = 5)
+    {
+        assert(image.channels() == 3);
+        
+        for (unsigned int i = 0; i<pts.size(); i++)
+        {
+            //center point
+            int px = pts[i].x;
+            int py = pts[i].y;
+            
+            cv::Point p1, p2, p3, p4;
+            
+            int h_l = length/2;
+            p1 = cv::Point(px - h_l, py);
+            p2 = cv::Point(px + h_l, py);
+            p3 = cv::Point(px, py - h_l);
+            p4 = cv::Point(px, py + h_l);
+            
+            cv::line(image, p1, p2, color);
+            cv::line(image, p3, p4, color);
+        }
+    }
 
     // error_image: output of parameter
     static void draw_reprojection_error(const vector<cv::Point3f> &pt_3d,

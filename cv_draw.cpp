@@ -38,7 +38,10 @@ void CvDraw::draw_match_vertical(const cv::Mat &image1, const cv::Mat &image2,
     for (int i = 0; i<pts1.size(); i += sample_num) {
         cv::Point p1(pts1[i].x, pts1[i].y);
         cv::Point p2(pts2[i].x, pts2[i].y + image1.rows + gap);
-        cv::line(matches, p1, p2, cv::Scalar(0, 0, 255));
+        int r = rand()%256;
+        int g = rand()%256;
+        int b = rand()%256;
+        cv::line(matches, p1, p2, cv::Scalar(b, g, r));
     }    
 }
 

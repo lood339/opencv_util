@@ -26,6 +26,21 @@ class CvxImgProc
 public:
     // gradient orientation in [0, 2 * pi)
     static Mat gradientOrientation(const Mat & img, const int gradMagThreshold = 0);
+    
+    // centroid orientation (as in ORB) https://en.wikipedia.org/wiki/Image_moment
+    // ouput: angles atan2(m01, m10)
+    static void centroidOrientation(const Mat & img, const vector<cv::Point2d> & pts, const int patchSize,
+                                    vector<float> & angles);
+    
+    // patchSize:  patch size to calcualte orientation
+    // smoothSize: Gaussian kernal size in pixel
+    // smooth orientation using Gaussian filter
+    static void centroidOrientation(const Mat & img, const int patchSize, const int smoothSize, Mat & orientation);
+    
+    // put patches into a single image, patch has same size
+    // rowNum: how many patches in a column
+    static Mat groupPatches(const vector<cv::Mat> & patches, int colNum);
+    
 };
 
 #endif /* cvxImgProc_cpp */

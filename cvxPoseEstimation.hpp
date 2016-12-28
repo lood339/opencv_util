@@ -23,17 +23,19 @@ struct PreemptiveRANSACParameter
 public:
     PreemptiveRANSACParameter()
     {
-        reproj_threshold = 15.0;
+        reproj_threshold = 5.0;
     }
 };
 
 struct PreemptiveRANSAC3DParameter
 {
-    double dis_threshold_; // distance threshod, unit meter
+    double dis_threshold_;    // distance threshod, unit meter
+    int refine_camera_num_;   // refine camera using all inliers
 public:
     PreemptiveRANSAC3DParameter()
     {
         dis_threshold_ = 0.1;
+        refine_camera_num_ = -1;
     }
     
 };
@@ -59,20 +61,6 @@ public:
                                    const vector<cv::Point3d> & wld_pts,
                                    cv::Mat & camera_pose);
     
-    // pose estimation from a nearby location orientation image
-    // using sift matching
-    /*
-    static bool estimateCameraPoseFromImageMatching(
-                                                    const cv::Mat & camera_matrix,
-                                                    const cv::Mat & dist_coeff,
-                                                    const vil_image_view<vxl_byte> & query_rgb_image,
-                                                    const vil_image_view<vxl_byte> & database_rgb_image,
-                                                    const cv::Mat & database_depth_image,
-                                                    const cv::Mat & database_pose,
-                                                    cv::Mat & estimated_pose,
-                                                    const int min_matching_num = 50);
-     */
-    
     // wld_pts: estimated points, has outliers
     static bool preemptiveRANSAC(const vector<cv::Point2d> & img_pts,
                                  const vector<cv::Point3d> & wld_pts,
@@ -81,6 +69,14 @@ public:
                                  const PreemptiveRANSACParameter & param,
                                  cv::Mat & camera_pose);
     
+    //corresonding world coordinate locations, estimated points, had outliers, multiple choices
+    static bool preemptiveRANSAC2DOneToMany(const vector<cv::Point2d> & img_pts,
+                                            const vector<vector<cv::Point3d> > & candidate_wld_pts,
+                                            const cv::Mat & camera_matrix,
+                                            const cv::Mat & dist_coeff,
+                                            const PreemptiveRANSACParameter & param,
+                                            cv::Mat & camera_pose);
+    
     // wld_pts: estimated points, had outliers
     static bool preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,
                                    const vector<cv::Point3d> & wld_pts,
@@ -88,12 +84,19 @@ public:
                                    cv::Mat & camera_pose);
     
     // camera_pts: camera coordinate locations
-    // wld_pts: corresonding world coordinate locations, estimated points, had outliers, multiple choices
-    //
+    // candidate_wld_pts: corresonding world coordinate locations, estimated points, had outliers, multiple choices
     static bool preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & camera_pts,
-                                            const vector<vector<cv::Point3d>> & candidate_wld_pts,
+                                            const vector<vector<cv::Point3d> > & candidate_wld_pts,
                                             const PreemptiveRANSAC3DParameter & param,
                                             cv::Mat & camera_pose);
+    
+    // camera_pts: camera coordinate locations
+    // wld_pts: corresonding world coordinate locations, estimated points, had outliers, multiple choices
+    // using all inliers
+    static bool preemptiveRANSAC3DAllInliers(const vector<cv::Point3d> & camera_pts,
+                                             const vector<vector<cv::Point3d>> & candidate_wld_pts,
+                                             const PreemptiveRANSAC3DParameter & param,
+                                             cv::Mat & camera_pose);
     
     // wld_pts: estimated points, had outliers
     // inliers: inliers for the finale camera pose

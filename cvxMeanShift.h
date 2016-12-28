@@ -59,16 +59,16 @@ public:
     {
         band_width_ = 0.1;   // dis ^ 2 / band_width < min_dis  --> valide mode
         min_size_   = 20;
-        min_dis_    = 0.1;  // relative distance to bandwith ?
-        max_mode_num_ = 200;  //maximum mode numbers in the cluster
+        min_dis_    = 1.0;    // relative distance to bandwith ?
+        max_mode_num_ = 500;  // maximum mode numbers in the cluster
     }
     
     CvxMeanShiftParameter(const double band_width, const int min_size, const double min_dis)
     {
         band_width_ = band_width;
         min_size_ = min_size;
-        min_dis_ = min_dis;
-        max_mode_num_ = 200;
+        min_dis_  = min_dis;
+        max_mode_num_ = 500;
     }
     
     bool readFromFile(const char* file_name)
