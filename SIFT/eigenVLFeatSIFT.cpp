@@ -267,6 +267,24 @@ void EigenVLFeatSIFT::descriptorToMatrix(const vector<std::shared_ptr<sift_keypo
     }
 }
 
+void EigenVLFeatSIFT::descriptorLocationToMatrix(const vector<std::shared_ptr<sift_keypoint> > & keypoints,
+                                                 Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> & matrix)
+{
+    assert(keypoints.size() > 0);
+    const int rows = (int)keypoints.size();
+    const int cols = (int)(keypoints[0]->descriptor().size()) + 2;
+    matrix.resize(rows, cols);
+    
+    for (int i = 0; i<keypoints.size(); i++) {
+        Eigen::VectorXf feat = keypoints[i]->descriptor();
+        for (int j = 0; j<feat.size(); j++) {
+            matrix(i, j) = feat[j];
+        }
+        matrix(i, feat.size()) = keypoints[i]->location_x();
+        matrix(i, feat.size() + 1) = keypoints[i]->location_y();
+    }
+}
+
 
 
 

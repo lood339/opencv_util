@@ -32,6 +32,11 @@ public:
                              const SIFTMatchingParameter & param, 
                              vector<cv::Point2d> & srcPts, vector<cv::Point2d> & dstPts);
     
+    // nearest neighbor matching
+    static void NNMatching(const cv::Mat & srcDescriptors, const cv::Mat & dstDescriptors,
+                           const vector<cv::Point2d> & srcPts, const vector<cv::Point2d> & dstPts,
+                           vector<cv::Point2d> & matchedSrcPts, vector<cv::Point2d> & matchedDstPts);
+    
     static void ORBMatching(const cv::Mat & srcImg, const cv::Mat & dstImg,
                             vector<cv::Point2d> & srcPts, vector<cv::Point2d> & dstPts);
     

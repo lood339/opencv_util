@@ -68,3 +68,28 @@ bool CvxWalshHadamard::generateWHFeature(const cv::Mat & image,
     assert(features.size() == pts.size());
     return true;
 }
+
+bool CvxWalshHadamard::generateWHFeatureWithoutFirstPattern(const cv::Mat & rgb_image,
+                                                            const vector<cv::Point2d> & pts,
+                                                            const int patchSize,
+                                                            const int kernelNum,
+                                                            vector<Eigen::VectorXf> & features)
+{
+    assert(rgb_image.type() == CV_8UC3);
+    
+    vector<Eigen::VectorXf> wh_features;
+    CvxWalshHadamard::generateWHFeature(rgb_image, pts, patchSize, kernelNum, wh_features);
+    
+    for (int i = 0; i<wh_features.size(); i++) {
+        Eigen::VectorXf feat(kernelNum * 3 - 3);
+        int k = 0;
+        for (int cha = 0; cha < 3; cha++) {
+            for (int j = 1; j<kernelNum; j++) {
+                feat[k] = wh_features[i][cha * kernelNum +j];
+                k++;
+            }
+        }
+        features.push_back(feat);
+    }
+    return true;
+}

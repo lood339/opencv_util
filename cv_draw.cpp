@@ -41,7 +41,7 @@ void CvDraw::draw_match_vertical(const cv::Mat &image1, const cv::Mat &image2,
         int r = rand()%256;
         int g = rand()%256;
         int b = rand()%256;
-        cv::line(matches, p1, p2, cv::Scalar(b, g, r));
+        cv::line(matches, p1, p2, cv::Scalar(b, g, r), 1);
     }    
 }
 
@@ -157,3 +157,7 @@ cv::Scalar CvDraw::blue()
     return cv::Scalar(255, 0, 0);
 }
 
+cv::Scalar CvDraw::yellow()
+{
+    return cv::Scalar(0, 255, 255);
+}

@@ -32,3 +32,24 @@ CvxUtil::splitFilename (const string& str, string &path, string &file)
     path = str.substr(0, found);
     file = str.substr(found + 1);
 }
+
+
+unsigned
+CvxUtil::value_to_bin_number(double v_min, double interval, double value, const unsigned nBin)
+{
+    int num = (value - v_min)/interval;
+    if (num < 0) {
+        return 0;
+    }
+    if (num >= nBin) {
+        return nBin - 1;
+    }
+    return (unsigned)num;
+}
+
+double
+CvxUtil::bin_number_to_value(double v_min, double interval, int bin)
+{
+    return v_min + bin * interval;
+}
+

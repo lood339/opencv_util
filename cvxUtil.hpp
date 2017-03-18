@@ -30,6 +30,14 @@ public:
     
     static void splitFilename (const string& str, string &path, string &file);
     
+    // quantilization method
+    // interval: resolution, the width of bin
+    // nBin: tobal number of bins
+    static unsigned value_to_bin_number(double v_min, double interval, double value, const unsigned nBin);
+    
+    // bin: bin index
+    static double bin_number_to_value(double v_min, double interval, int bin);
+    
     template <typename T>
     static vector<size_t> sortIndices(const vector<T> &v) {
         

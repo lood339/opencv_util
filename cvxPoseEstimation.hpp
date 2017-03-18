@@ -75,7 +75,9 @@ public:
                                             const cv::Mat & camera_matrix,
                                             const cv::Mat & dist_coeff,
                                             const PreemptiveRANSACParameter & param,
-                                            cv::Mat & camera_pose);
+                                            cv::Mat & camera_pose,
+                                            cv::Mat & rvec,
+                                            cv::Mat & tvec);
     
     // wld_pts: estimated points, had outliers
     static bool preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,

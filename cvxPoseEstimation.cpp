@@ -10,7 +10,7 @@
 #include <iostream>
 //#include "vl_sift_feature.h"
 //#include "vgl_fundamental_ransac.hpp"
-#include "RGBGUtil.hpp"
+//#include "RGBGUtil.hpp"
 #include "cvxCalib3d.hpp"
 #include <Eigen/Geometry>
 
@@ -353,7 +353,9 @@ bool CvxPoseEstimation::preemptiveRANSAC2DOneToMany(const vector<cv::Point2d> & 
                                                     const cv::Mat & camera_matrix,
                                                     const cv::Mat & dist_coeff,
                                                     const PreemptiveRANSACParameter & param,
-                                                    cv::Mat & camera_pose)
+                                                    cv::Mat & camera_pose,
+                                                    cv::Mat & camera_rvec,
+                                                    cv::Mat & camera_tvec)
 {
     assert(img_pts.size() == candidate_wld_pts.size());
     if (img_pts.size() < 500) {
@@ -363,11 +365,13 @@ bool CvxPoseEstimation::preemptiveRANSAC2DOneToMany(const vector<cv::Point2d> & 
     const int num_iteration = 2048;
     int K = 1024;
     const int N = (int)img_pts.size();
-    const int B = 500;
+    int B = 500;
+    if (img_pts.size() < 1000) {
+        B = 300;
+    }
     
     vector<std::pair<Mat, Mat> > rt_candidate;
     for (int i = 0; i<num_iteration; i++) {
-        
         int k1 = 0;
         int k2 = 0;
         int k3 = 0;
@@ -525,6 +529,12 @@ bool CvxPoseEstimation::preemptiveRANSAC2DOneToMany(const vector<cv::Point2d> & 
     
     // camere to world coordinate
     camera_pose = camera_pose.inv();
+    camera_rvec = losses.front().rvec_;
+    camera_tvec = losses.front().tvec_;
+    
+    if (isnan(camera_pose.at<double>(0, 0))) {
+        return false;
+    }
     
     return true;
 }
@@ -775,7 +785,7 @@ bool CvxPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & 
         sampled_wld_pts.push_back(candidate_wld_pts[k4][0]);
         
         Mat affine;
-        Mat inlier;
+    //    Mat inlier;
         CvxCalib3D::KabschTransform(sampled_camera_pts, sampled_wld_pts, affine);
         affine_candidate.push_back(affine);
         if (affine_candidate.size() > K) {
@@ -859,7 +869,7 @@ bool CvxPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & 
                     inlier_wld_pts.push_back(candidate_wld_pts[index][wld_index]);
                 }
                 Mat affine;
-                Mat inlier;
+               // Mat inlier;
                 
                 CvxCalib3D::KabschTransform(inlier_camera_pts, inlier_wld_pts, affine);
                 losses[i].affine_ = affine;
@@ -1290,6 +1300,7 @@ void CvxPoseEstimation::poseDistance(const cv::Mat & src_pose,
     euclidean_disance += dy * dy;
     euclidean_disance += dz * dz;
     euclidean_disance = sqrt(euclidean_disance);
+ //   printf("location distance are %f %f %f\n", dx, dy, dz);
 }
 
 
@@ -1343,8 +1354,9 @@ Mat CvxPoseEstimation::rotationToQuaternion(const cv::Mat & rot)
         q2 *= CvxPoseEstimation::SIGN(r32 + r23);
         q3 *= +1.0f;
     } else {
-        
+        printf("q0, q1, q2, q3: %f %f %f %f\n", q0, q1, q2, q3);
         printf("Error: rotation matrix quaternion.\n");
+        cout<<"rotation matrix is \n"<<rot<<endl;
         assert(0);
     }
     float r = CvxPoseEstimation::NORM(q0, q1, q2, q3);

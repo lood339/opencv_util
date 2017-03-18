@@ -202,7 +202,7 @@ vector<string> CvxIO::read_files(const char *dir_name)
             
             if (!strcmp(post_fix, cur_post_fix)) {
                 file_names.push_back(pre_str + string(ent->d_name));
-                cout<<file_names.back()<<endl;
+              //  cout<<file_names.back()<<endl;
             }
             
             //printf ("%s\n", ent->d_name);
@@ -212,3 +212,22 @@ vector<string> CvxIO::read_files(const char *dir_name)
     printf("read %lu files\n", file_names.size());
     return file_names;
 }
+
+vector<string> CvxIO::read_file_names(const char *file_name)
+{
+    vector<string> file_names;
+    FILE *pf = fopen(file_name, "r");
+    assert(pf);
+    while (1) {
+        char line[1024] = {NULL};
+        int ret = fscanf(pf, "%s", line);
+        if (ret != 1) {
+            break;
+        }
+        file_names.push_back(string(line));
+    }
+    printf("read %lu lines\n", file_names.size());
+    fclose(pf);
+    return file_names;
+}
+

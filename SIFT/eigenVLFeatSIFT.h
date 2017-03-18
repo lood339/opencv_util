@@ -90,6 +90,10 @@ public:
     
     static void descriptorToMatrix(const vector<std::shared_ptr<sift_keypoint> > & keypoints,
                                    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> & matrix);
+    
+    // feature descriptor + image location
+    static void descriptorLocationToMatrix(const vector<std::shared_ptr<sift_keypoint> > & keypoints,
+                                           Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> & matrix);
 };
 
 
