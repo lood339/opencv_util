@@ -6,12 +6,12 @@
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#include "cv_draw.hpp"
+#include "cvx_draw.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 
 using namespace::cv;
 
-void CvDraw::draw_match_vertical(const cv::Mat &image1, const cv::Mat &image2,
+void CvxDraw::draw_match_vertical(const cv::Mat &image1, const cv::Mat &image2,
                                  const vector< cv::Point2d > & pts1,
                                  const vector< cv::Point2d > & pts2,
                                  cv::Mat &matches, const int sample_num)
@@ -45,7 +45,7 @@ void CvDraw::draw_match_vertical(const cv::Mat &image1, const cv::Mat &image2,
     }    
 }
 
-void CvDraw::draw_reprojection_error(const vector<cv::Point3f> &pts_3d,
+void CvxDraw::draw_reprojection_error(const vector<cv::Point3f> &pts_3d,
                                      const vector<cv::Point2f> &pts_2d,
                                      const cv::Mat & camera_intrinsic_matrix,
                                      const cv::Mat & rotation,
@@ -61,8 +61,8 @@ void CvDraw::draw_reprojection_error(const vector<cv::Point3f> &pts_3d,
     projectedPoints.resize(pts_3d.size());
     cv::projectPoints(Mat(pts_3d), rotation, translation, camera_intrinsic_matrix, distCoeffs, projectedPoints);
     
-    CvDraw::draw_cross(error_image, pts_2d, CvDraw::red());
-    CvDraw::draw_cross(error_image, projectedPoints, CvDraw::green());
+    CvxDraw::draw_cross(error_image, pts_2d, CvxDraw::red());
+    CvxDraw::draw_cross(error_image, projectedPoints, CvxDraw::green());
     
     // draw reprojection error
     for (int i = 0; i<pts_2d.size(); i++) {
@@ -73,11 +73,11 @@ void CvDraw::draw_reprojection_error(const vector<cv::Point3f> &pts_3d,
         
         cv::Point p1 = cv::Point(pts_2d[i].x, pts_2d[i].y);
         cv::Point p2 = cv::Point(projectedPoints[i].x, projectedPoints[i].y);
-        cv::line(error_image, p1, p2, CvDraw::blue());
+        cv::line(error_image, p1, p2, CvxDraw::blue());
     }
 }
 
-cv::Mat CvDraw::visualize_gradient(const Mat & magnitude, const Mat & orientation)
+cv::Mat CvxDraw::visualize_gradient(const Mat & magnitude, const Mat & orientation)
 {
     assert(magnitude.rows == orientation.rows);
     assert(magnitude.cols == orientation.cols);
@@ -105,7 +105,7 @@ cv::Mat CvDraw::visualize_gradient(const Mat & magnitude, const Mat & orientatio
     return vmat;
 }
 
-void CvDraw::draw_cross(cv::Mat & image,
+void CvxDraw::draw_cross(cv::Mat & image,
                         const vector<cv::Point2f> & pts,
                         const cv::Scalar & color,
                         const int length)
@@ -131,7 +131,7 @@ void CvDraw::draw_cross(cv::Mat & image,
     }   
 }
 
-void CvDraw::copy_rgb_image(const unsigned char * data,
+void CvxDraw::copy_rgb_image(const unsigned char * data,
                             int img_width,
                             int img_height,
                             cv::Mat &image)
@@ -141,23 +141,23 @@ void CvDraw::copy_rgb_image(const unsigned char * data,
     image = temp.clone();
 }
 
-cv::Scalar CvDraw::red()
+cv::Scalar CvxDraw::red()
 {
     return cv::Scalar(0, 0, 255);
     
 }
 
-cv::Scalar CvDraw::green()
+cv::Scalar CvxDraw::green()
 {
     return cv::Scalar(0, 255, 0);
 }
 
-cv::Scalar CvDraw::blue()
+cv::Scalar CvxDraw::blue()
 {
     return cv::Scalar(255, 0, 0);
 }
 
-cv::Scalar CvDraw::yellow()
+cv::Scalar CvxDraw::yellow()
 {
     return cv::Scalar(0, 255, 255);
 }

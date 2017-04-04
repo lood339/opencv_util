@@ -1,13 +1,13 @@
 //
-//  cv_draw.hpp
+//  cvx_draw.hpp
 //  MAVGoogleImageMatching
 //
 //  Created by jimmy on 2016-01-11.
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#ifndef cv_draw_cpp
-#define cv_draw_cpp
+#ifndef cvx_draw_cpp
+#define cvx_draw_cpp
 
 // util functions for draw images
 #include <stdio.h>
@@ -22,7 +22,7 @@
 using std::vector;
 using cv::Mat;
 
-class CvDraw
+class CvxDraw
 {
 public:
     /*
@@ -105,8 +105,7 @@ public:
             cv::line(image, p1, p2, color, thickness);
             cv::line(image, p3, p4, color, thickness);
         }
-    }   
-    
+    }
 
     // error_image: output of parameter
     static void draw_reprojection_error(const vector<cv::Point3f> &pt_3d,

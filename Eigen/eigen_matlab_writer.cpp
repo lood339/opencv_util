@@ -57,6 +57,7 @@ void EigenMatlabWriter::matrix_filewrite(const T & eigen_matrix, const char* fil
 // matrix
 template void EigenMatlabWriter::matrix_filewrite(const Eigen::MatrixXd & eigen_matrix, const char* file_name, const char * var_name);
 template void EigenMatlabWriter::matrix_filewrite(const Eigen::MatrixXf & eigen_matrix, const char* file_name, const char * var_name);
+template void EigenMatlabWriter::matrix_filewrite(const Eigen::MatrixXi & eigen_matrix, const char* file_name, const char * var_name);
 
 // vector
 template void EigenMatlabWriter::matrix_filewrite(const Eigen::VectorXd & eigen_matrix, const char* file_name, const char * var_name);
