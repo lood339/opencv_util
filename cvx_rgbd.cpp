@@ -8,7 +8,7 @@
 
 #include "cvx_rgbd.h"
 #include "lsd_line_segment.h"
-#include "eigen_line_matching.h"
+#include "cvx_line.h"
 #include <iostream>
 #include "vgl_algo.h"
 
@@ -224,10 +224,6 @@ bool CvxRGBD::detect3DLines(const cv::Mat & color_img,
         
         
         // detect direction
-       // void pixelAlongLineSegment(const vgl_line_segment_2d<double> & line_segment, const double area_width,
-              //                     const int w, const int h,
-                 //                  std::vector<vgl_point_2d<double> > & left_side_pts,
-                     //              std::vector<vgl_point_2d<double> > & right_side_pts);
         vector<vgl_point_2d<double> > left_side_pts;
         vector<vgl_point_2d<double> > right_side_pts;
         {
@@ -277,7 +273,7 @@ bool CvxRGBD::detect3DLines(const cv::Mat & color_img,
         line_segments.push_back(segment);
     }
     
-    printf("find %lu line segment\n", line_segments.size());
+    //printf("find %lu line segment\n", line_segments.size());
     
     return true;
 }

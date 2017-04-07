@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include "cvxImage_310.hpp"
 #include <vector>
-//#include <vil/vil_image_view.h>
 
 using std::vector;
 

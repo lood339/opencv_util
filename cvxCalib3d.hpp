@@ -22,7 +22,13 @@ class CvxCalib3D
 {
 public:    
     static void rigidTransform(const vector<cv::Point3d> & src, const cv::Mat & affine, vector<cv::Point3d> & dst);
+    
     static void KabschTransform(const vector<cv::Point3d> & src, const vector<cv::Point3d> & dst, cv::Mat & affine);
+    
+    // camera transform from both point-point pairs, and line segment end point pairs
+    static void KabschTransform(const vector<cv::Point3d> & src, const vector<cv::Point3d> & dst,
+                                const vector<cv::Point3d> & line_end_src, const vector<cv::Point3d> & line_end_dst,
+                                cv::Mat & affine);
     
     // camera_depth_img: CV_64FC1
     // camera_to_world_pose: 4x4 CV_64FC1

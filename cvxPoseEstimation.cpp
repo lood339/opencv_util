@@ -8,9 +8,6 @@
 
 #include "cvxPoseEstimation.hpp"
 #include <iostream>
-//#include "vl_sift_feature.h"
-//#include "vgl_fundamental_ransac.hpp"
-//#include "RGBGUtil.hpp"
 #include "cvxCalib3d.hpp"
 #include <Eigen/Geometry>
 
@@ -784,8 +781,7 @@ bool CvxPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & 
         sampled_wld_pts.push_back(candidate_wld_pts[k3][0]);
         sampled_wld_pts.push_back(candidate_wld_pts[k4][0]);
         
-        Mat affine;
-    //    Mat inlier;
+        Mat affine;    
         CvxCalib3D::KabschTransform(sampled_camera_pts, sampled_wld_pts, affine);
         affine_candidate.push_back(affine);
         if (affine_candidate.size() > K) {

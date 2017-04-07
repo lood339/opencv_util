@@ -45,6 +45,46 @@ void CvxCalib3D::KabschTransform(const vector<cv::Point3d> & src, const vector<c
     }
 }
 
+void CvxCalib3D::KabschTransform(const vector<cv::Point3d> & src, const vector<cv::Point3d> & dst,
+                                 const vector<cv::Point3d> & line_end_src, const vector<cv::Point3d> & line_end_dst,
+                                 cv::Mat & affine)
+{
+    assert(src.size() == dst.size());
+    assert(line_end_src.size() == line_end_dst.size());
+    assert(src.size() >= 4);
+    
+    Eigen::Matrix3Xd in(3, src.size());
+    Eigen::Matrix3Xd out(3, dst.size());
+    
+    for (int i = 0; i<src.size(); i++) {
+        in(0, i) = src[i].x;
+        in(1, i) = src[i].y;
+        in(2, i) = src[i].z;
+        out(0, i) = dst[i].x;
+        out(1, i) = dst[i].y;
+        out(2, i) = dst[i].z;
+    }
+    
+    Eigen::Matrix3Xd line_end_in(3, line_end_src.size());
+    Eigen::Matrix3Xd line_end_out(3, line_end_dst.size());
+    for (int i = 0; i<line_end_src.size(); i++) {
+        line_end_in(0, i) = line_end_src[i].x;
+        line_end_in(1, i) = line_end_src[i].y;
+        line_end_in(2, i) = line_end_src[i].z;
+        line_end_out(0, i) = line_end_dst[i].x;
+        line_end_out(1, i) = line_end_dst[i].y;
+        line_end_out(2, i) = line_end_dst[i].z;
+    }    
+   
+    Eigen::Affine3d aff = find3DAffineTransform(in, out, line_end_in, line_end_out);
+    affine = cv::Mat::zeros(3, 4, CV_64FC1);
+    for (int i = 0; i<3; i++) {
+        for (int j = 0; j<4; j++) {
+            affine.at<double>(i, j) = aff(i, j);
+        }
+    }
+}
+
 cv::Mat CvxCalib3D::cameraDepthToWorldCoordinate(const cv::Mat & camera_depth_img,
                                      const cv::Mat & camera_to_world_pose,
                                      const cv::Mat & calibration_matrix,

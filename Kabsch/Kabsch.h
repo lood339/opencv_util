@@ -11,6 +11,15 @@
 
 #include <Eigen/Geometry>
 
-Eigen::Affine3d Find3DAffineTransform(Eigen::Matrix3Xd in, Eigen::Matrix3Xd out);
+// The input 3D points are stored as columns.
+Eigen::Affine3d Find3DAffineTransform(Eigen::Matrix3Xd input_pts, Eigen::Matrix3Xd output_pts);
+
+// The input 3D points are stored as columns.
+// rot_input_pts, rot_output_pts: only constrain rotation of the affine transformation
+Eigen::Affine3d find3DAffineTransform(Eigen::Matrix3Xd input_pts, Eigen::Matrix3Xd output_pts,
+                                      Eigen::Matrix3Xd rot_input_pts, Eigen::Matrix3Xd rot_output_pts);
+
+
+
 
 #endif /* Kabsch_h */
