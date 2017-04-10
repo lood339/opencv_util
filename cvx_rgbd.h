@@ -78,6 +78,15 @@ public:
                                              cv::Mat & world_coordinate,
                                              cv::Mat & mask);
     
+    // depth image to camera coordinate
+    static bool cameraDepthToCameraCoordinate(const cv::Mat & camera_depth_img,
+                                             const cv::Mat & calibration_matrix,
+                                             const double depth_factor,
+                                             const double min_depth,
+                                             const double max_depth,
+                                             cv::Mat & camera_coordinate,
+                                             cv::Mat & mask);
+    
     // color_img: CV_8UC3 in default BGR format
     // detect 3D lines in camera coordinate
     // depth_img: CV_64FC1, in meter

@@ -15,22 +15,26 @@
 #include "cvxImage_310.hpp"
 #include <Eigen/Dense>
 
-
 using std::vector;
 
 struct PreemptiveRANSAC3DPointLineParameter
 {
-    double dis_threshold_;              // distance threshod, unit meter
+    double dis_threshold;              // distance threshod, unit meter
     double line_distance_threshold;     // distance between end points to line, unit meter
     double line_loss_weight;                 // one line vs one point
+    bool non_linear_optimization;       // use non linear optimization
     
 public:
     PreemptiveRANSAC3DPointLineParameter()
     {
-        dis_threshold_ = 0.1;
+        dis_threshold = 0.1;
         line_distance_threshold = 0.05;
-        line_loss_weight = 4.0;
+        line_loss_weight = 2.0;
+        non_linear_optimization = true;
     }
+    
+    bool readFromFile(const char *file);
+    
     
 };
 

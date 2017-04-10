@@ -9,6 +9,41 @@
 #include "cvx_pl_pose_estimation.h"
 #include "cvxCalib3d.hpp"
 #include <algorithm>
+#include "vnl_algo.h"
+#include <string>
+#include <unordered_map>
+
+
+using std::unordered_map;
+using std::string;
+
+
+bool PreemptiveRANSAC3DPointLineParameter::readFromFile(const char *file)
+{
+    FILE *pf = fopen(file, "r");
+    assert(pf);
+    const int param_num = 4;
+    std::unordered_map<std::string, double> imap;
+    for(int i = 0; i<param_num; i++)
+    {
+        char s[1024] = {NULL};
+        double val = 0.0;
+        int ret = fscanf(pf, "%s %lf", s, &val);
+        if (ret != 2) {
+            break;
+        }
+        imap[string(s)] = val;
+    }
+    assert(imap.size() == param_num);
+    
+    dis_threshold = imap[string("dis_threshold")];
+    line_distance_threshold = imap[string("line_distance_threshold")];
+    line_loss_weight = imap[string("line_loss_weight")];
+    non_linear_optimization = ((int)imap[string("non_linear_optimization")] != 0);
+    fclose(pf);
+    return true;
+}
+
 
 struct CameraPoseHypothese
 {
@@ -18,6 +53,7 @@ struct CameraPoseHypothese
     Mat affine_;     //              for 3D --> 3D camera to world transformation
     vector<unsigned int> inlier_indices_;         // camera coordinate index
     vector<unsigned int> inlier_candidate_world_pts_indices_; // candidate world point index
+    vector<unsigned int> line_indices_;   // inlier line
     
     // store all inliers from preemptive ransac, for line
     vector<cv::Point3d> camera_pts_;
@@ -56,8 +92,10 @@ struct CameraPoseHypothese
         assert(other.camera_pts_.size() == other.wld_pts_.size());
         camera_pts_.resize(other.camera_pts_.size());
         wld_pts_.resize(other.wld_pts_.size());
+        line_indices_.resize(other.line_indices_.size());
         std::copy(other.camera_pts_.begin(), other.camera_pts_.end(), camera_pts_.begin());
         std::copy(other.wld_pts_.begin(), other.wld_pts_.end(), wld_pts_.begin());
+        std::copy(other.line_indices_.begin(), other.line_indices_.end(), line_indices_.begin());
     }
     
     bool operator < (const CameraPoseHypothese & other) const
@@ -94,8 +132,10 @@ struct CameraPoseHypothese
         assert(other.camera_pts_.size() == other.wld_pts_.size());
         camera_pts_.resize(other.camera_pts_.size());
         wld_pts_.resize(other.wld_pts_.size());
+        line_indices_.resize(other.line_indices_.size());
         std::copy(other.camera_pts_.begin(), other.camera_pts_.end(), camera_pts_.begin());
         std::copy(other.wld_pts_.begin(), other.wld_pts_.end(), wld_pts_.begin());
+        std::copy(other.line_indices_.begin(), other.line_indices_.end(), line_indices_.begin());
         return *this;
     }
 };
@@ -116,6 +156,40 @@ static double project3DPoint(const cv::Point3d& pt,
     dist = (p - proj_p).norm();
     
     return dist;
+}
+
+static vector<Eigen::Vector3d> transformPointList(const vector<cv::Point3d> & pts)
+{
+    vector<Eigen::Vector3d> pts2(pts.size());
+    for (int i = 0; i<pts.size(); i++) {
+        double x = pts[i].x;
+        double y = pts[i].y;
+        double z = pts[i].z;
+        pts2[i] = Eigen::Vector3d(x, y, z);
+    }
+    return pts2;
+}
+
+static Eigen::Affine3d transformAffine(const Mat & affine)
+{
+    Eigen::Affine3d ret;
+    for (int r = 0; r<3; r++) {
+        for (int c = 0; c<4; c++) {
+            ret(r, c) = affine.at<double>(r, c);
+        }
+    }
+    return ret;
+}
+
+static Mat transformAffine(const Eigen::Affine3d & affine)
+{
+    Mat ret = cv::Mat::zeros(3, 4, CV_64FC1);
+    for (int i = 0; i<3; i++) {
+        for (int j = 0; j<4; j++) {
+            ret.at<double>(i, j) = affine(i, j);
+        }
+    }
+    return ret;
 }
 
 bool CvxPLPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & camera_pts,
@@ -177,9 +251,10 @@ bool CvxPLPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> 
         losses.push_back(hyp);
     }
     
-    const double threshold = param.dis_threshold_;
+    const double threshold = param.dis_threshold;
     const double line_threshold = param.line_distance_threshold;
     const double line_loss_weight = param.line_loss_weight;
+    const bool non_linear_opt = param.non_linear_optimization;
     while (losses.size() > 1) {
         // sample random set
         vector<cv::Point3d> sampled_camera_pts;
@@ -237,6 +312,7 @@ bool CvxPLPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> 
                     losses[i].camera_pts_.push_back(line_end_points[j]);
                     losses[i].wld_pts_.push_back(proj_start_pt);
                     losses[i].wld_pts_.push_back(proj_end_pt);
+                    losses[i].line_indices_.push_back(j);
                 }
                 else {
                     losses[i].loss_ += line_loss_weight;  // todo, the weight of lines
@@ -270,6 +346,36 @@ bool CvxPLPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> 
                 // inlier line segment
                 if (losses[i].camera_pts_.size() != 0) {
                     CvxCalib3D::KabschTransform(inlier_camera_pts, inlier_wld_pts, losses[i].camera_pts_, losses[i].wld_pts_, affine);
+                    
+                    // the final camera output
+                    if (losses.size() == 1 && non_linear_opt) {
+                        assert(losses[i].line_indices_.size() * 2 == losses[i].camera_pts_.size());
+                        
+                        vector<Eigen::Vector3d> camera_start_pts;
+                        vector<Eigen::Vector3d> camera_end_pts;
+                        vector<Eigen::ParametrizedLine<double, 3> > world_lines;
+                        for (int j = 0; j<losses[i].line_indices_.size(); j++) {
+                            int index = losses[i].line_indices_[j];
+                            world_lines.push_back(candidate_wld_lines[index]);
+                            
+                            cv::Point3d p1 = losses[i].camera_pts_[2 * j];
+                            cv::Point3d p2 = losses[i].camera_pts_[2 * j + 1];
+                            Eigen::Vector3d p3(p1.x, p1.y, p1.z);
+                            Eigen::Vector3d p4(p2.x, p2.y, p2.z);
+                            camera_start_pts.push_back(p3);
+                            camera_end_pts.push_back(p4);
+                        }
+                        
+                        Eigen::Affine3d init_camera = transformAffine(affine);
+                        Eigen::Affine3d final_camera;
+                        bool is_estimated = VnlAlgo::estimateCameraPose(transformPointList(inlier_camera_pts),
+                                                                        transformPointList(inlier_wld_pts),
+                                                                        camera_start_pts, camera_end_pts,
+                                                                        world_lines, init_camera, final_camera);
+                        if (is_estimated) {
+                            affine = transformAffine(final_camera);
+                        }
+                    }
                 }
                 else {
                      CvxCalib3D::KabschTransform(inlier_camera_pts, inlier_wld_pts, affine);                    
@@ -280,6 +386,7 @@ bool CvxPLPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> 
                 losses[i].inlier_candidate_world_pts_indices_.clear();
                 losses[i].camera_pts_.clear();
                 losses[i].wld_pts_.clear();
+                losses[i].line_indices_.clear();
             }
         }
     }

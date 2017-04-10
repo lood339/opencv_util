@@ -129,7 +129,9 @@ bool fitLine3D(const vector<Eigen::Vector3d> & line_points, Eigen::ParametrizedL
 
 bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & output_line)
 {
-    assert(line_points.size() > 3);
+    if(line_points.size() <= 3) {
+        return false;
+    }
     const int num_iteration = 100;
     const int N = (int)line_points.size();
     const double inlier_distance_threshold = 0.05;

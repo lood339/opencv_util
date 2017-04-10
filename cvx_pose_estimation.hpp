@@ -1,13 +1,13 @@
 //
-//  cvxPoseEstimation.hpp
+//  cvx_pose_estimation.hpp
 //  LoopClosure
 //
 //  Created by jimmy on 2016-03-31.
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#ifndef cvxPoseEstimation_cpp
-#define cvxPoseEstimation_cpp
+#ifndef cvx_pose_estimation_cpp
+#define cvx_pose_estimation_cpp
 
 #include <stdio.h>
 #include "cvxImage_310.hpp"

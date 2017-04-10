@@ -1,12 +1,12 @@
 //
-//  cvxPoseEstimation.cpp
+//  cvx_pose_estimation.cpp
 //  LoopClosure
 //
 //  Created by jimmy on 2016-03-31.
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#include "cvxPoseEstimation.hpp"
+#include "cvx_pose_estimation.hpp"
 #include <iostream>
 #include "cvxCalib3d.hpp"
 #include <Eigen/Geometry>

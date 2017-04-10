@@ -92,6 +92,57 @@ bool CvxRGBD::cameraDepthToWorldCoordinate(const cv::Mat & camera_depth_img,
     return true;
 }
 
+bool CvxRGBD::cameraDepthToCameraCoordinate(const cv::Mat & camera_depth_img,
+                                   const cv::Mat & calibration_matrix,
+                                   const double depth_factor,
+                                   const double min_depth,
+                                   const double max_depth,
+                                   cv::Mat & camera_coordinate,
+                                   cv::Mat & mask)
+{
+    assert(camera_depth_img.type() == CV_64FC1);
+    assert(calibration_matrix.type() == CV_64FC1);
+    assert(min_depth < max_depth);
+    assert(min_depth >= 0.0);
+    
+    const int width  = camera_depth_img.cols;
+    const int height = camera_depth_img.rows;
+    cv::Mat inv_K = calibration_matrix.inv();
+    
+    cv::Mat world_coordinate_img = cv::Mat::zeros(height, width, CV_64FC3);
+    cv::Mat loc_img = cv::Mat::zeros(3, 1, CV_64F);
+    cv::Mat loc_camera_h = cv::Mat::zeros(4, 1, CV_64F); // homography coordinate
+    mask = cv::Mat::ones(height, width, CV_8UC1);
+    camera_coordinate = cv::Mat::zeros(height, width, CV_64FC3);
+    for (int r = 0; r < height; r++) {
+        for (int c = 0; c < width; c++) {
+            double camera_depth = camera_depth_img.at<double>(r, c)/depth_factor; // to meter
+            if (camera_depth < min_depth || camera_depth > max_depth ) {
+                mask.at<unsigned char>(r, c) = 0;
+                continue;
+            }
+            loc_img.at<double>(0, 0) = c;
+            loc_img.at<double>(1, 0) = r;
+            loc_img.at<double>(2, 0) = 1.0;
+            cv::Mat loc_camera = inv_K * loc_img;
+            double local_z = loc_camera.at<double>(2, 0);
+            double scale = camera_depth/local_z;
+            //cout<<"scale is "<<scale<<endl;
+            loc_camera_h.at<double>(0, 0) = loc_camera.at<double>(0, 0) * scale;
+            loc_camera_h.at<double>(1, 0) = loc_camera.at<double>(1, 0) * scale;
+            loc_camera_h.at<double>(2, 0) = loc_camera.at<double>(2, 0) * scale;
+            loc_camera_h.at<double>(3, 0) = 1.0;
+            
+            // the x, y, z in camera coordininate
+            camera_coordinate.at<cv::Vec3d>(r,c)[0] = loc_camera_h.at<double>(0, 0);
+            camera_coordinate.at<cv::Vec3d>(r,c)[1] = loc_camera_h.at<double>(1, 0);
+            camera_coordinate.at<cv::Vec3d>(r,c)[2] = loc_camera_h.at<double>(2, 0);
+        }
+    }
+
+    return true;
+}
+
 static Eigen::Vector2d cameraToImageProjection(const Eigen::Matrix3d & K, const Eigen::Vector3d & p)
 {
     Eigen::Vector3d q = K * p;

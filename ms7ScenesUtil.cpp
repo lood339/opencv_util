@@ -17,7 +17,7 @@ Mat Ms7ScenesUtil::read_pose_7_scenes(const char *file_name)
 {
     Mat P = Mat::zeros(4, 4, CV_64F);
     FILE *pf = fopen(file_name, "r");
-    if(file_name==NULL)
+    if(pf == NULL)
     {
         cout<<file_name<<endl;
     }
