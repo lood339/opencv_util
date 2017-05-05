@@ -14,6 +14,9 @@
 // The input 3D points are stored as columns.
 Eigen::Affine3d Find3DAffineTransform(Eigen::Matrix3Xd input_pts, Eigen::Matrix3Xd output_pts);
 
+// The input 3D points are stored as columns. No scale effect
+Eigen::Affine3d Find3DAffineTransformSameScale(Eigen::Matrix3Xd input_pts, Eigen::Matrix3Xd output_pts);
+
 // The input 3D points are stored as columns.
 // rot_input_pts, rot_output_pts: only constrain rotation of the affine transformation
 Eigen::Affine3d find3DAffineTransform(Eigen::Matrix3Xd input_pts, Eigen::Matrix3Xd output_pts,

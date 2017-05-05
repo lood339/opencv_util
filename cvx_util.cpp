@@ -6,7 +6,7 @@
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#include "cvxUtil.hpp"
+#include "cvx_util.hpp"
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/core_c.h>
 

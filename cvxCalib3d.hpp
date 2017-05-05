@@ -15,6 +15,7 @@
 #include "opencv2/core/core_c.h"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/imgproc/imgproc_c.h"
+#include <Eigen/Dense>
 
 using std::vector;
 
@@ -23,12 +24,26 @@ class CvxCalib3D
 public:    
     static void rigidTransform(const vector<cv::Point3d> & src, const cv::Mat & affine, vector<cv::Point3d> & dst);
     
+        
     static void KabschTransform(const vector<cv::Point3d> & src, const vector<cv::Point3d> & dst, cv::Mat & affine);
+    
+    static Eigen::Affine3d KabschTransform(const vector<Eigen::Vector3d> & src, const vector<Eigen::Vector3d> & dst);
+    
     
     // camera transform from both point-point pairs, and line segment end point pairs
     static void KabschTransform(const vector<cv::Point3d> & src, const vector<cv::Point3d> & dst,
                                 const vector<cv::Point3d> & line_end_src, const vector<cv::Point3d> & line_end_dst,
                                 cv::Mat & affine);
+    
+    // approximate EPnPL: accurate and linear time pose estimation from points and lines
+    static bool EPnPL(const vector<cv::Point2d> & img_pts, const vector<cv::Point3d> & wld_pts,
+                      const vector<cv::Point2d> & img_line_end_pts, const vector<cv::Point3d> & wld_line_end_pts,
+                      const cv::Mat& camera_matrix, const cv::Mat& distortion_coeff,
+                      const cv::Mat& init_rvec, const cv::Mat& init_tvec,
+                      cv::Mat& final_rvec, cv::Mat& final_tvec);
+    
+    
+        
     
     // camera_depth_img: CV_64FC1
     // camera_to_world_pose: 4x4 CV_64FC1

@@ -55,10 +55,13 @@
 #include <vgl/vgl_cubic_spline_2d.h
  */
 
+
+#include <vgl/vgl_distance.h> 
+#include <vgl/vgl_closest_point.h>
 /*
 # Functions
-#include <vgl/vgl_closest_point.h            vgl_closest_point.hxx
-#include <vgl/vgl_distance.h                 vgl_distance.hxx
+            vgl_closest_point.hxx
+                vgl_distance.hxx
 #include <vgl/vgl_clip.h                     vgl_clip.hxx
 #include <vgl/vgl_area.h                     vgl_area.hxx
 #include <vgl/vgl_convex.h                   vgl_convex.hxx

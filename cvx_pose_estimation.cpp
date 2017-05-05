@@ -750,7 +750,7 @@ bool CvxPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & 
     const int num_iteration = 2048;
     int K = 1024;
     const int N = (int)camera_pts.size();
-    const int B = 500;
+    const int B = param.sample_number_;
     
     vector<cv::Mat > affine_candidate;
     for (int i = 0; i<num_iteration; i++) {
@@ -865,7 +865,6 @@ bool CvxPoseEstimation::preemptiveRANSAC3DOneToMany(const vector<cv::Point3d> & 
                     inlier_wld_pts.push_back(candidate_wld_pts[index][wld_index]);
                 }
                 Mat affine;
-               // Mat inlier;
                 
                 CvxCalib3D::KabschTransform(inlier_camera_pts, inlier_wld_pts, affine);
                 losses[i].affine_ = affine;

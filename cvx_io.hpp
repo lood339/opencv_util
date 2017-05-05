@@ -1,13 +1,13 @@
 //
-//  cvxIO.hpp
+//  cvx_io.hpp
 //  RGB_RF
 //
 //  Created by jimmy on 2016-05-26.
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#ifndef cvxIO_cpp
-#define cvxIO_cpp
+#ifndef cvx_io_cpp
+#define cvx_io_cpp
 
 #include <stdio.h>
 #include "opencv2/core/core.hpp"

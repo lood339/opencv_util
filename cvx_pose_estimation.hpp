@@ -29,12 +29,14 @@ public:
 struct PreemptiveRANSAC3DParameter
 {
     double dis_threshold_;    // distance threshod, unit meter
+    int sample_number_;
     int refine_camera_num_;   // refine camera using all inliers
 public:
     PreemptiveRANSAC3DParameter()
     {
         dis_threshold_ = 0.1;
         refine_camera_num_ = -1;
+        sample_number_ = 1024;
     }
     
 };

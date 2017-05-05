@@ -1,13 +1,13 @@
 //
-//  cvxUtil.hpp
+//  cvx_util.hpp
 //  RGB_RF
 //
 //  Created by jimmy on 2016-05-27.
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#ifndef cvxUtil_cpp
-#define cvxUtil_cpp
+#ifndef cvx_util_cpp
+#define cvx_util_cpp
 
 #include <stdio.h>
 #include <vector>

@@ -67,6 +67,51 @@ Eigen::Affine3d Find3DAffineTransform(Eigen::Matrix3Xd in, Eigen::Matrix3Xd out)
   return A;
 }
 
+Eigen::Affine3d Find3DAffineTransformSameScale(Eigen::Matrix3Xd in, Eigen::Matrix3Xd out)
+{
+    // Default output
+    Eigen::Affine3d A;
+    A.linear() = Eigen::Matrix3d::Identity(3, 3);
+    A.translation() = Eigen::Vector3d::Zero();
+    
+    if (in.cols() != out.cols())
+        throw "Find3DAffineTransform(): input data mis-match";
+    
+    // Find the centroids then shift to the origin
+    Eigen::Vector3d in_ctr = Eigen::Vector3d::Zero();
+    Eigen::Vector3d out_ctr = Eigen::Vector3d::Zero();
+    for (int col = 0; col < in.cols(); col++) {
+        in_ctr  += in.col(col);
+        out_ctr += out.col(col);
+    }
+    in_ctr /= in.cols();
+    out_ctr /= out.cols();
+    for (int col = 0; col < in.cols(); col++) {
+        in.col(col)  -= in_ctr;
+        out.col(col) -= out_ctr;
+    }
+    
+    // SVD
+    Eigen::MatrixXd Cov = in * out.transpose();
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(Cov, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    
+    // Find the rotation
+    double d = (svd.matrixV() * svd.matrixU().transpose()).determinant();
+    if (d > 0)
+        d = 1.0;
+    else
+        d = -1.0;
+    Eigen::Matrix3d I = Eigen::Matrix3d::Identity(3, 3);
+    I(2, 2) = d;
+    Eigen::Matrix3d R = svd.matrixV() * I * svd.matrixU().transpose();
+    
+    // The final transform
+    A.linear() = R;
+    A.translation() = (out_ctr - R*in_ctr);
+    
+    return A;
+}
+
 Eigen::Affine3d find3DAffineTransform(Eigen::Matrix3Xd in, Eigen::Matrix3Xd out,
                                       Eigen::Matrix3Xd rot_input, Eigen::Matrix3Xd rot_output)
 {

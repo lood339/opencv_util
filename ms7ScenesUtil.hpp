@@ -18,6 +18,7 @@
 #include <opencv2/highgui/highgui_c.h>
 #include <string>
 #include <vector>
+#include <Eigen/Dense>
 
 using std::string;
 using std::vector;
@@ -107,6 +108,17 @@ public:
                                                      vector<cv::Point3d> & wld_pts_gt,
                                                      vector<vector<cv::Point3d> > & candidate_wld_pts_pred,
                                                      vector<vector<double> > & candidate_feature_dists);
+    
+    // load prediction result from all decision trees with feature distance and uncertainty
+    static bool load_prediction_result_with_uncertainty(const char *file_name,
+                                                        string & rgb_img_file,
+                                                        string & depth_img_file,
+                                                        string & camera_pose_file,
+                                                        vector<Eigen::Vector2d> & img_pts,
+                                                        vector<Eigen::Vector3d> & wld_pts_gt,
+                                                        vector<vector<Eigen::Vector3d> > & candidate_wld_pts_pred,
+                                                        vector<vector<Eigen::Matrix3d> > & candidate_wld_pts_pred_covariance,
+                                                        vector<vector<double> > & candidate_feature_dists);
                                                   
     
     // load camera estimation result

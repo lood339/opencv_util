@@ -33,15 +33,45 @@ public:
         non_linear_optimization = true;
     }
     
-    bool readFromFile(const char *file);
-    
+    bool readFromFile(const char *file);  
     
 };
 
+struct PreemptiveRANSAC2DParameter
+{
+    double reproj_threshold;  // re-projection error threshold, unit pixel
+    double line_weight;
+    
+public:
+    PreemptiveRANSAC2DParameter()
+    {
+        reproj_threshold = 3.0;
+        line_weight = 2.0;
+    }
+};
 
 class CvxPLPoseEstimation
 {
 public:
+    
+    //img_pts: image location
+    //candidate_wld_pts: predicted world location, from multiple trees
+    //line_start_points: end point of line in image
+    //line_end_points: end point of line in image
+    //candidate_wld_lines: predicted world line
+    //camera_matrix: camera intrinsic parameter
+    //dist_coeff: camera lense distortion
+    //camera_pose: 4 x 4 camera pose, from camera to world
+    static bool preemptiveRANSAC2DOneToMany(const vector<cv::Point2d> & img_pts,
+                                            const vector<vector<cv::Point3d> > & candidate_wld_pts,
+                                            const vector<cv::Point2d> & line_start_points,
+                                            const vector<cv::Point2d> & line_end_points,
+                                            const vector<Eigen::ParametrizedLine<double, 3> > & candidate_wld_lines,
+                                            const cv::Mat & camera_matrix,
+                                            const cv::Mat & dist_coeff,
+                                            const PreemptiveRANSAC2DParameter & param,
+                                            cv::Mat & camera_pose);
+                                            
     
     // camera_pts: camera coordinate locations
     // candidate_wld_pts: corresonding world coordinate locations, estimated points, had outliers, multiple choices
