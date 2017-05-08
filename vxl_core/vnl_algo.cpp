@@ -602,7 +602,7 @@ public:
                 dist = sqrt(dist/sigma*dist + 0.0000001);  //
                 assert(!std::isnan(dist));
                 assert(dist >= 0.0);
-             //   printf("point to line mahalanobis distance %lf\n\n", dist);
+                //printf("point to line mahalanobis distance %lf\n\n", dist);
                 fx[index] = dist;
                 index++;
             }

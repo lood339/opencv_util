@@ -156,7 +156,7 @@ bool CvxMeanShift::meanShift(const vector<Eigen::VectorXf>& input_data,
         }
     }
     if (largest_support_num < min_support) {
-        printf("larest support number is %d, threshold number is %d \n", largest_support_num, min_support);
+        //printf("largest support number is %d, threshold number is %d \n", largest_support_num, min_support);
         return false;
     }
     

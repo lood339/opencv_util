@@ -443,6 +443,7 @@ bool fitLuLine3D(const vector<Eigen::Vector3d > & ordered_line_points,
 Eigen::Vector3d JacobD2withA(const Eigen::Vector3d& A, const Eigen::Vector3d& B,
                              const Eigen::Vector3d& C)
 {
+    /* d^2 = squared_norm( (A - C) X (B -C))  / squared_norm(B - A), may be wrong
     Eigen::Vector3d dydA = Eigen::Vector3d::Identity();
     Eigen::Vector3d AminusC = A - C;
     Eigen::Vector3d BminusC = B - C;
@@ -456,6 +457,23 @@ Eigen::Vector3d JacobD2withA(const Eigen::Vector3d& A, const Eigen::Vector3d& B,
     Eigen::Vector3d dDdA = dFdA.transpose() * dDdF;
     
     dydA = (dDdA * E - D * dEdA)/(E * E);
+     */     
+    
+    Eigen::Vector3d dydA = Eigen::Vector3d::Identity();
+    Eigen::Vector3d BminusA = B - A;
+    Eigen::Vector3d AminusC = A - C;
+    Eigen::Vector3d F = BminusA.cross(AminusC);
+    double D = F.squaredNorm();
+    double E = (B - A).squaredNorm();
+    assert(E != 0.0);
+    Eigen::Vector3d dEdA = 2.0 * (A - B);
+    Eigen::Matrix3d dFdA = EigenGeometryUtil::vector2SkewSymmetricMatrix(B) +
+                           EigenGeometryUtil::vector2SkewSymmetricMatrix(C).transpose();
+    Eigen::Vector3d dDdF = 2.0 * F;
+    Eigen::Vector3d dDdA = dFdA.transpose() * dDdF;
+    
+    dydA = (dDdA * E - D * dEdA)/(E * E);
+     
    
     return dydA;
 }
@@ -463,6 +481,7 @@ Eigen::Vector3d JacobD2withA(const Eigen::Vector3d& A, const Eigen::Vector3d& B,
 Eigen::Vector3d JacobD2withB(const Eigen::Vector3d& A, const Eigen::Vector3d& B,
                              const Eigen::Vector3d& C)
 {
+    /*
     Eigen::Vector3d dydB = Eigen::Vector3d::Identity();
     Eigen::Vector3d AminusC = A - C;
     Eigen::Vector3d BminusC = B - C;
@@ -473,6 +492,20 @@ Eigen::Vector3d JacobD2withB(const Eigen::Vector3d& A, const Eigen::Vector3d& B,
     Eigen::Vector3d dEdB = 2.0 * (B - A);
     Eigen::Vector3d dDdF = 2.0 * F;
     Eigen::Matrix3d dFdB = EigenGeometryUtil::vector2SkewSymmetricMatrix(AminusC);
+    Eigen::Vector3d dDdB = dFdB.transpose() * dDdF;
+    dydB = (dDdB * E - D * dEdB)/(E * E);
+     */
+    
+    Eigen::Vector3d dydB = Eigen::Vector3d::Identity();
+    Eigen::Vector3d BminusA = B - A;
+    Eigen::Vector3d AminusC = A - C;
+    Eigen::Vector3d F = BminusA.cross(AminusC);
+    double D = F.squaredNorm();
+    double E = (B - A).squaredNorm();
+    assert(E != 0.0);
+    Eigen::Vector3d dEdB = 2.0 * (B - A);
+    Eigen::Vector3d dDdF = 2.0 * F;
+    Eigen::Matrix3d dFdB = EigenGeometryUtil::vector2SkewSymmetricMatrix(AminusC).transpose();
     Eigen::Vector3d dDdB = dFdB.transpose() * dDdF;
     dydB = (dDdB * E - D * dEdB)/(E * E);
     
@@ -489,9 +522,10 @@ bool pointToLineDistanceUncertainty(const Eigen::Vector3d& A, const Eigen::Vecto
     
     Eigen::ParametrizedLine<double, 3> line = Eigen::ParametrizedLine<double, 3>::Through(A, B);
     distance = line.distance(P);
+    
     Eigen::Vector3d dydA = JacobD2withA(A, B, P); // dydA y = d^2
     Eigen::Vector3d dydB = JacobD2withB(A, B, P); //
-    double d_d_dy = 0.5 /(sqrt(distance + 0.000001));  // 1/2 * 1/y^2
+    double d_d_dy = 0.5 /(distance + 0.000001);  // 1/2 * 1/y^2
     Eigen::MatrixXd J = Eigen::MatrixXd::Zero(1, 6);
     J(0, 0) = dydA.x();
     J(0, 1) = dydA.y();
