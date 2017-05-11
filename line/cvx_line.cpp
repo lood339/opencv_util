@@ -261,6 +261,76 @@ bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::Parame
     return true;
 }
 
+bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & output_line,
+                     vector<unsigned>& output_inlier_index)
+{
+    if(line_points.size() <= 3) {
+        return false;
+    }
+    const int num_iteration = 100;
+    const int N = (int)line_points.size();
+    const double inlier_distance_threshold = 0.05;
+    double min_inlier_ratio = 0.5;
+    int best_inlier_num = 0;
+    
+    Eigen::ParametrizedLine<double, 3> best_line;
+    for (int i = 0; i<num_iteration; i++) {
+        // randomly pick 2 points and fit a line
+        int k1 = 0;
+        int k2 = 0;
+        
+        do{
+            k1 = rand()%N;
+            k2 = rand()%N;
+        }while (k1 == k2);
+        
+        Eigen::ParametrizedLine<double, 3> min_config_line = Eigen::ParametrizedLine<double, 3>::Through(line_points[k1], line_points[k2]);
+        int inlier_num = 0;
+        vector<unsigned int> inlier_index;
+        // count inlier number
+        for (int j = 0; j<line_points.size(); j++) {
+            double dist = min_config_line.distance(line_points[j]);
+            if (dist < inlier_distance_threshold) {
+                inlier_index.push_back(j);
+                inlier_num++;
+            }
+        }
+        if (inlier_num > best_inlier_num) {
+            best_inlier_num = inlier_num;
+        }
+        else {
+            continue;
+        }
+        
+        // fit a better model
+        vector<cv::Point3d> inlier_points(inlier_index.size());
+        for (int j = 0; j < inlier_index.size(); j++) {
+            Eigen::Vector3d p = line_points[inlier_index[j]];
+            inlier_points[j] = cv::Point3d(p.x(), p.y(), p.z());
+        }
+        
+        cv::Vec6d line3d;
+        cv::fitLine(inlier_points, line3d, CV_DIST_L2, 0, 0.01, 0.01);
+        
+        Eigen::Vector3d org_point(line3d[3], line3d[4], line3d[5]);
+        Eigen::Vector3d direction(line3d[0], line3d[1], line3d[2]);
+        best_line = Eigen::ParametrizedLine<double, 3>(org_point, direction);
+        output_inlier_index = inlier_index;
+    }
+    
+    if (best_inlier_num >= min_inlier_ratio * N) {
+        //printf("inlier ratio %f \n", 1.0 * best_inlier_num/N);
+        output_line = best_line;
+        return true;
+    }
+    else {
+        //printf("inlier ratio %f \n", 1.0 * best_inlier_num/N);
+        return false;
+    }
+
+    return true;
+}
+
 bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points,
                      Eigen::ParametrizedLine<double, 3> & output_line,
                      std::pair<Eigen::Vector3d, Eigen::Vector3d>& output_line_end_point)
@@ -385,6 +455,15 @@ bool fitLuLine3D(const vector<Eigen::Vector3d > & ordered_line_points,
 {
     assert(ordered_line_points.size() == ordered_point_precision.size());
     
+    /*
+    // for testing
+    cout<<"line points: \n";
+    for (int i = 0; i<ordered_line_points.size(); i++) {
+        cout<<ordered_line_points[i].transpose()<<endl;
+    }
+    cout<<endl;
+     */
+    
     
     // 1. fit a 3D line
     Eigen::ParametrizedLine<double, 3> line;
@@ -438,6 +517,26 @@ bool fitLuLine3D(const vector<Eigen::Vector3d > & ordered_line_points,
     putput_cov_line = JwJ.inverse();
     
     return true;
+}
+
+bool fitLuLine3D(const vector<Eigen::Vector3d> & ordered_line_points,
+                 const vector<Eigen::Matrix3d> & ordered_point_covariance,
+                 Eigen::Vector3d& A, Eigen::Vector3d& B, Eigen::MatrixXd & cov_line,
+                 bool check_invert)
+{
+    vector<Eigen::Vector3d> points;
+    vector<Eigen::Matrix3d> ordered_point_precision;
+    for (int i = 0; i<ordered_point_covariance.size(); i++) {
+        Eigen::Matrix3d cov = ordered_point_covariance[i];
+        Eigen::ColPivHouseholderQR<Eigen::Matrix3d> qr(cov);
+        if (qr.isInvertible() && cov.determinant() > 0.0) {  // positive definitive
+            Eigen::Matrix3d precision = cov.inverse();
+            ordered_point_precision.push_back(precision);
+            points.push_back(ordered_line_points[i]);
+        }
+    }
+    
+    return fitLuLine3D(points, ordered_point_precision, A, B, cov_line);
 }
 
 Eigen::Vector3d JacobD2withA(const Eigen::Vector3d& A, const Eigen::Vector3d& B,

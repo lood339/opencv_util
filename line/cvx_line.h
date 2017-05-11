@@ -80,6 +80,9 @@ bool fitLine3D(const vector<Eigen::Vector3d > & line_points, Eigen::Parametrized
 bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & line);
 
 bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & line,
+                     vector<unsigned>& inlier_index);
+
+bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & line,
                      std::pair<Eigen::Vector3d, Eigen::Vector3d>& line_end_point);
 
 
@@ -105,6 +108,12 @@ Eigen::Matrix3d JacobQwithB(const Eigen::Vector3d& A, const Eigen::Vector3d& B,
 bool fitLuLine3D(const vector<Eigen::Vector3d> & ordered_line_points,
                  const vector<Eigen::Matrix3d> & ordered_point_precision,
                  Eigen::Vector3d& A, Eigen::Vector3d& B, Eigen::MatrixXd & cov_line);
+
+// input covariance instead of precision matrix
+bool fitLuLine3D(const vector<Eigen::Vector3d> & ordered_line_points,
+                 const vector<Eigen::Matrix3d> & ordered_point_covariance,
+                 Eigen::Vector3d& A, Eigen::Vector3d& B, Eigen::MatrixXd & cov_line,
+                 bool check_invert);
 
 // compute distance variance from a point to a 3D line
 // D2 = distance ^2, squared norm, distance: from a point C to a line represented by [A; B]

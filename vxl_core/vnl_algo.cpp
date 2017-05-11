@@ -423,6 +423,7 @@ public:
         for (int i = 0; i<source_pts_.size(); i++) {
             Eigen::Vector3d p = R * source_pts_[i] + translation;  // rotate and translate a source point
             Eigen::Vector3d dif = p - target_pts_[i];
+            
             // mahalanobis distance
             double dist = dif.transpose() * target_covariance_inv_[i] * dif;
             if (std::isnan(dist) || dist < 0.0) {
@@ -511,7 +512,7 @@ bool VnlAlgo::estimateCameraPoseWithUncertainty(const vector<Eigen::Vector3d>& s
         residual.getResult(x, refined_pose);
         return true;
     }
-    lmq.diagnose_outcome();
+    //lmq.diagnose_outcome();
     return false;
 }
 
@@ -523,32 +524,38 @@ protected:
     vector<Vector3d> target_pts_;
     vector<Matrix3d> target_covariance_inv_;
     
-    vector< vector<Eigen::Vector3d> > source_line_pts_;
-    vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> > target_lines_;
-    vector<Eigen::MatrixXd> target_line_cov_;
+    vector<vector< Eigen::Vector3d> >  world_line_pts_group_;
+    vector<vector< Eigen::Matrix3d> > world_line_pts_precision_;
+    vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> > camera_lines_;
+    vector<Eigen::ParametrizedLine<double, 3> > camera_lines_infinite_;
     
 public:
     vnl_point_line_mahalanobis_residual(const vector<Vector3d>& source_pts,
                                         const vector<Vector3d>& target_pts,
                                         const vector<Matrix3d> & target_covariance_inv,
                                         
-                                        const vector< vector<Eigen::Vector3d> >& source_line_pts,
-                                        const vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> >& target_lines,
-                                        const vector<Eigen::MatrixXd>& target_line_cov,
+                                        const vector<vector< Eigen::Vector3d> > & world_line_pts_group,
+                                        const vector<vector< Eigen::Matrix3d> >& world_line_pts_precision,
+                                        const vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> >& camera_lines,
                                         const int num_constraint):
     vnl_least_squares_function(7, num_constraint, no_gradient),
     source_pts_(source_pts),
     target_pts_(target_pts),
     target_covariance_inv_(target_covariance_inv),
-    source_line_pts_(source_line_pts),
-    target_lines_(target_lines),
-    target_line_cov_(target_line_cov)
+    world_line_pts_group_(world_line_pts_group),
+    world_line_pts_precision_(world_line_pts_precision),
+    camera_lines_(camera_lines)
     {
         assert(num_constraint > 7);
         assert(source_pts.size() == target_pts.size());
         assert(target_covariance_inv.size() == target_pts.size());
         
-        assert(target_lines.size() == target_line_cov.size());
+        assert(world_line_pts_group.size() == world_line_pts_precision.size());
+        assert(world_line_pts_group.size() == camera_lines.size());
+        for (unsigned i = 0; i<camera_lines_.size(); i++) {
+            Eigen::ParametrizedLine<double, 3> line = Eigen::ParametrizedLine<double, 3>::Through(camera_lines_[i].first, camera_lines_[i].second);
+            camera_lines_infinite_.push_back(line);
+        }
     }
     
     void f(const vnl_vector<double> &x, vnl_vector<double> &fx)
@@ -570,14 +577,14 @@ public:
         int index = 0;
         // 1. point constraint
         for (unsigned i = 0; i<source_pts_.size(); i++) {
-            Eigen::Vector3d p = R * source_pts_[i] + translation;  // rotate and translate a source point
+            Eigen::Vector3d p = R * source_pts_[i] + translation;  // rotate and translate a source point, from camera to world
             Eigen::Vector3d dif = p - target_pts_[i];
             // mahalanobis distance
             double dist = dif.transpose() * target_covariance_inv_[i] * dif;
             if (std::isnan(dist) || dist < 0.0) {
                 Eigen::Matrix3d cov = target_covariance_inv_[i].inverse();
                 double det = cov.determinant();
-                cout<<"negative mahalanobis distance, determinant is "<<det<<endl;
+                cout<<"point negative mahalanobis distance, determinant is "<<det<<endl;
             }
             dist = std::max(0.0, dist); // approximate the distance if mahalanobis distance is negative
             dist = sqrt(dist + 0.0000001);
@@ -587,25 +594,33 @@ public:
             index++;
         }
         
+        Eigen::Matrix3d inv_r = R.inverse();
         // 2. line constraint
-        for (unsigned i = 0; i<target_lines_.size(); i++)  {
-            Eigen::Vector3d pa = target_lines_[i].first;
-            Eigen::Vector3d pb = target_lines_[i].second;
-            for (unsigned j = 0; j<source_line_pts_[i].size(); j++) {
-                double dist = 0.0;
-                double sigma = 0.0;
-                Eigen::Vector3d camera_p = source_line_pts_[i][j];
-                Eigen::Vector3d wld_p = R * camera_p + translation;
-                pointToLineDistanceUncertainty(pa, pb, target_line_cov_[i], wld_p, dist, sigma);
-                //printf("point to line distance %lf\n", dist);
-                assert(sigma > 0);
-                dist = sqrt(dist/sigma*dist + 0.0000001);  //
-                assert(!std::isnan(dist));
+        for (unsigned i = 0; i<camera_lines_infinite_.size(); i++)  {
+            for (unsigned j = 0; j<world_line_pts_group_[i].size(); j++) {
+                Eigen::Vector3d p = world_line_pts_group_[i][j];  // world coordinate
+                // change from world to camera coordiante
+                Eigen::Vector3d c_p = inv_r * (p - translation);  // camera coordinate
+                Eigen::Vector3d q = camera_lines_infinite_[i].projection(c_p); //@ omit lambda when calcuate q
+                Eigen::Vector3d delta = c_p - q;
+                Eigen::Matrix3d lambda = world_line_pts_precision_[i][j];
+                
+                double dist = delta.transpose() * lambda * delta;
+                if (std::isnan(dist) || dist < 0.0) {
+                    Eigen::Matrix3d cov = world_line_pts_precision_[i][j].inverse();
+                    double det = cov.determinant();
+                    cout<<"line negative mahalanobis distance, determinant is "<<det<<endl;
+                    cout<<"covariance matrix \n"<<cov<<endl;
+                }                 
+                //double dist = delta.norm();
+                //printf("point to line mahalanobis distance is %lf %lf\n", dist, delta.norm());
+                dist = std::max(0.0, dist); // approximate the distance if mahalanobis distance is negative
+                dist = sqrt(dist + 0.0000001);
                 assert(dist >= 0.0);
-                //printf("point to line mahalanobis distance %lf\n\n", dist);
                 fx[index] = dist;
                 index++;
             }
+            
         }
     }
     
@@ -634,27 +649,39 @@ bool VnlAlgo::estimateCameraPoseWithUncertainty(const vector<Eigen::Vector3d>& s
                                                 const vector<Eigen::Vector3d>& target_pts, // world coordiante points (predicted value)
                                                 const vector<Eigen::Matrix3d>& target_covariance_inv, // world coordinate points covariance
                                                 // line
-                                                const vector<vector< Eigen::Vector3d> > & source_line_pts_group,
-                                                const vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> >& target_lines,
-                                                const vector<Eigen::MatrixXd>& target_line_cov,
+                                                const vector<vector< Eigen::Vector3d> > & world_line_pts_group,
+                                                const vector<vector< Eigen::Matrix3d> > & world_line_pts_precision,
+                                                const vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> >& camera_lines,
+                                                
                                                 const Eigen::Affine3d& init_pose,
                                                 Eigen::Affine3d& refined_pose)
 {
+    
     assert(source_pts.size() == target_pts.size());
     assert(target_covariance_inv.size() == target_pts.size());
-    assert(target_lines.size() == target_line_cov.size());
+    assert(world_line_pts_group.size() == world_line_pts_group.size());
+    assert(world_line_pts_group.size() == camera_lines.size());
     
     // check invert matrix
     for (int i = 0; i<target_covariance_inv.size(); i++) {
         if (target_covariance_inv[i].hasNaN()) {
+            printf("Error, numerical error, has NaN.\n");
             return false;
+        }
+    }
+    for (int i = 0; i<world_line_pts_precision.size(); i++) {
+        for (int j = 0; j<world_line_pts_precision[i].size(); j++) {
+            if (world_line_pts_precision[i][j].hasNaN()) {
+                printf("Error, numerical error, has NaN.\n");
+                return false;
+            }
         }
     }
     
     // count constraint number
     int num_constraint = (int)source_pts.size();
-    for (unsigned i = 0; i<source_line_pts_group.size(); i++) {
-        num_constraint += (int)source_line_pts_group[i].size();
+    for (unsigned i = 0; i<world_line_pts_group.size(); i++) {
+        num_constraint += (int)world_line_pts_group[i].size();
     }
     if (num_constraint <= 7) {
         return false;
@@ -663,7 +690,7 @@ bool VnlAlgo::estimateCameraPoseWithUncertainty(const vector<Eigen::Vector3d>& s
     Eigen::Matrix3d R = init_pose.rotation();
     Eigen::Vector3d trs = init_pose.translation(); // translation    
     vnl_point_line_mahalanobis_residual residual(source_pts, target_pts, target_covariance_inv,
-                                                 source_line_pts_group, target_lines, target_line_cov, num_constraint);
+                                                 world_line_pts_group, world_line_pts_precision, camera_lines, num_constraint);
     
     Eigen::Quaternion<double> qt(R);
     vnl_vector<double> x(7, 0.0);
@@ -679,11 +706,12 @@ bool VnlAlgo::estimateCameraPoseWithUncertainty(const vector<Eigen::Vector3d>& s
     lmq.set_x_tolerance(0.0001);
     bool is_minimized = lmq.minimize(x);
     if (is_minimized) {
-        lmq.diagnose_outcome();
+        //lmq.diagnose_outcome();
         residual.getResult(x, refined_pose);
         return true;
     }
-    lmq.diagnose_outcome();
+    //lmq.diagnose_outcome();
+    
     
     return false;
 }

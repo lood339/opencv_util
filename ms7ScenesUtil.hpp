@@ -29,6 +29,9 @@ public:
     // read camera pose file
     static cv::Mat read_pose_7_scenes(const char *file_name);
     
+    //
+    static bool read_pose_7_scenes(const char *file_name, Eigen::Affine3d& affine);
+    
     // invalid depth is 0.0
     static cv::Mat camera_depth_to_world_depth(const cv::Mat & camera_depth_img, const cv::Mat & pose);
         

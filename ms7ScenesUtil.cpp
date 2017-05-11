@@ -8,6 +8,7 @@
 
 #include "ms7ScenesUtil.hpp"
 #include <iostream>
+#include <opencv2/core/eigen.hpp>
 
 using cv::Mat;
 using std::cout;
@@ -32,6 +33,20 @@ Mat Ms7ScenesUtil::read_pose_7_scenes(const char *file_name)
     fclose(pf);
     //    cout<<"pose is "<<P<<endl;
     return P;
+}
+
+bool Ms7ScenesUtil::read_pose_7_scenes(const char *file_name, Eigen::Affine3d& affine)
+{
+    cv::Mat pose = Ms7ScenesUtil::read_pose_7_scenes(file_name);
+    Eigen::Matrix4d eigen_pose;
+    cv2eigen(pose, eigen_pose);
+    
+    Eigen::Matrix3d r = eigen_pose.block(0, 0, 3, 3);
+    Eigen::Vector3d t(eigen_pose(0, 3), eigen_pose(1, 3), eigen_pose(2, 3));
+    affine.linear() = r;
+    affine.translation() = t;
+    
+    return true;
 }
 
 

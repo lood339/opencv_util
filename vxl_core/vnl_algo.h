@@ -68,14 +68,16 @@ public:
     
     // refine camera pose by minimizing Mahalanobis distance using both points and lines
     // target_line_cov: line model covariance matrix
+    // refined_pose: camera to world
     static
-    bool estimateCameraPoseWithUncertainty(const vector<Eigen::Vector3d>& source_pts, // camera points
-                                           const vector<Eigen::Vector3d>& target_pts, // world coordiante points (predicted value)
-                                           const vector<Eigen::Matrix3d>& target_pt_covariance_inv, // invert of world coordinate points covariance
+    bool estimateCameraPoseWithUncertainty(const vector<Eigen::Vector3d>& camera_pts, // camera points
+                                           const vector<Eigen::Vector3d>& world_pts, // world coordiante points (predicted value)
+                                           const vector<Eigen::Matrix3d>& world_pt_precision, // invert of world coordinate points covariance
                                            // point on the line
-                                           const vector<vector< Eigen::Vector3d> > & source_line_pts_group,
-                                           const vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> >& target_lines,
-                                           const vector<Eigen::MatrixXd>& target_line_cov,              // matrix size, 6 x 6
+                                           const vector<vector< Eigen::Vector3d> > & world_line_pts_group,
+                                           const vector<vector< Eigen::Matrix3d> >& world_line_pts_precision,
+                                           const vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> >& camera_lines,
+                                                        // matrix size, 6 x 6
                                            const Eigen::Affine3d& init_pose,
                                            Eigen::Affine3d& refined_pose);
     
