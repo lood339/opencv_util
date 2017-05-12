@@ -18,6 +18,7 @@
 #include <opencv2/highgui/highgui_c.h>
 #include <string>
 #include <vector>
+#include <Eigen/Dense>
 
 using std::string;
 using std::vector;
@@ -27,6 +28,9 @@ class Ms7ScenesUtil
 public:
     // read camera pose file
     static cv::Mat read_pose_7_scenes(const char *file_name);
+    
+    //
+    static bool read_pose_7_scenes(const char *file_name, Eigen::Affine3d& affine);
     
     // invalid depth is 0.0
     static cv::Mat camera_depth_to_world_depth(const cv::Mat & camera_depth_img, const cv::Mat & pose);
@@ -105,6 +109,28 @@ public:
                                                   vector<vector<cv::Point3d> > & candidate_wld_pts_pred,
                                                   vector<cv::Vec3d> & color_sample,
                                                   vector<vector<cv::Vec3d> > & candidate_color_pred);
+    
+    // load prediction result form all decision trees with feature distance information
+    static bool load_prediction_result_with_distance(const char *file_name,
+                                                     string & rgb_img_file,
+                                                     string & depth_img_file,
+                                                     string & camera_pose_file,
+                                                     vector<cv::Point2d> & img_pts,
+                                                     vector<cv::Point3d> & wld_pts_gt,
+                                                     vector<vector<cv::Point3d> > & candidate_wld_pts_pred,
+                                                     vector<vector<double> > & candidate_feature_dists);
+    
+    // load prediction result from all decision trees with feature distance and uncertainty
+    static bool load_prediction_result_with_uncertainty(const char *file_name,
+                                                        string & rgb_img_file,
+                                                        string & depth_img_file,
+                                                        string & camera_pose_file,
+                                                        vector<Eigen::Vector2d> & img_pts,
+                                                        vector<Eigen::Vector3d> & wld_pts_gt,
+                                                        vector<vector<Eigen::Vector3d> > & candidate_wld_pts_pred,
+                                                        vector<vector<Eigen::Matrix3d> > & candidate_wld_pts_pred_covariance,
+                                                        vector<vector<double> > & candidate_feature_dists);
+                                                  
     
     // load camera estimation result
     static bool load_estimated_camera_pose(const char *file_name,

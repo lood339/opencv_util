@@ -7,9 +7,10 @@
 //
 
 #include "cvxImgProc.hpp"
-#include "cv_draw.hpp"
+#include "cvx_draw.hpp"
 
 using cv::Rect;
+using cv::Vec3b;
 
 Mat CvxImgProc::gradientOrientation(const Mat & img, const int gradMagThreshold)
 {
@@ -181,8 +182,29 @@ Mat CvxImgProc::groupPatches(const vector<cv::Mat> & patches, int colNum)
         int sx = c * patch_w;
         patches[i].copyTo(img(cv::Rect(sx, sy, patch_w, patch_h)));
     }
-    
     return img;
+}
+
+
+bool CvxImgProc::estimateLineOrientation(const Mat& gry_img, const cv::Point2d & startPoint,
+                                         const cv::Point2d & endPoint,const int line_width)
+{
+    assert(gry_img.type() == CV_8UC1);
+    
+    cv::Point pt1(startPoint.x, startPoint.y);
+    cv::Point pt2(endPoint.x, endPoint.y);
+    
+    cv::LineIterator it(gry_img, pt1, pt2, 8);
+    
+    vector<unsigned char> buf(it.count);
+    
+    for(int i = 0; i < it.count; i++, ++it){
+     //   buf[i] = *it;
+    }
+    
+    
+    
+    return true;
 }
 
 

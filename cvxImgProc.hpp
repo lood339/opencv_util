@@ -17,6 +17,8 @@
 #include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/highgui/highgui_c.h"
+#include "opencv2/features2d.hpp"
+#include <opencv2/line_descriptor.hpp>
 
 using std::vector;
 using cv::Mat;
@@ -40,6 +42,11 @@ public:
     // put patches into a single image, patch has same size
     // rowNum: how many patches in a column
     static Mat groupPatches(const vector<cv::Mat> & patches, int colNum);
+    
+    // left side of line should be brighter than right side area
+    static bool estimateLineOrientation(const Mat& gry_img, const cv::Point2d & startPoint,
+                                        const cv::Point2d & endPoint,const int line_width);
+    
     
 };
 

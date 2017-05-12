@@ -9,6 +9,7 @@
 #include "cvxImgMatch.h"
 #include "eigenVLFeatSIFT.h"
 #include "eigenFlann.h"
+#include <opencv2/core/eigen.hpp>
 
 void CvxImgMatch::SIFTMatching(const cv::Mat & srcImg, const cv::Mat & dstImg,
                                const SIFTMatchingParameter & param,
@@ -35,7 +36,7 @@ void CvxImgMatch::SIFTMatching(const cv::Mat & srcImg, const cv::Mat & dstImg,
     EigenVLFeatSIFT::descriptorToMatrix(dst_keypoints, dst_descriptors);
     
     EigenFlann32F flann32;
-    flann32.setData(dst_descriptors);
+    flann32.setData(dst_descriptors, 1);
     
     vector<vector<int> >  indices;       // index of src descriptors
     vector<vector<float> > dists;
@@ -53,6 +54,44 @@ void CvxImgMatch::SIFTMatching(const cv::Mat & srcImg, const cv::Mat & dstImg,
         }
     }
     assert(srcPts.size() == dstPts.size());
+}
+
+void CvxImgMatch::NNMatching(const cv::Mat & srcDescriptors, const cv::Mat & dstDescriptors,
+                             const vector<cv::Point2d> & srcPts, const vector<cv::Point2d> & dstPts,
+                             vector<cv::Point2d> & matchedSrcPts, vector<cv::Point2d> & matchedDstPts)
+{
+    assert(srcDescriptors.type() == srcDescriptors.type());
+    assert(srcDescriptors.type() == CV_64FC1 || srcDescriptors.type() == CV_32FC1);
+    assert(dstDescriptors.type() == CV_64FC1 || dstDescriptors.type() == CV_32FC1);
+    assert(srcDescriptors.rows == srcPts.size());
+    assert(dstDescriptors.rows == dstPts.size());
+    
+    const double ratio_threshold = 0.7;
+    using RowMajorFloat32 = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    
+    RowMajorFloat32 src_descriptors = RowMajorFloat32::Zero(srcDescriptors.rows, srcDescriptors.cols);
+    RowMajorFloat32 dst_descriptors = RowMajorFloat32::Zero(dstDescriptors.rows, dstDescriptors.cols);
+    
+    cv::cv2eigen(srcDescriptors, src_descriptors);
+    cv::cv2eigen(dstDescriptors, dst_descriptors);
+    
+    EigenFlann32F flann32;
+    flann32.setData(dst_descriptors, 1);
+    
+    vector<vector<int> >  indices;       // index of src descriptors
+    vector<vector<float> > dists;
+    flann32.search(src_descriptors, indices, dists, 2, 32);
+    
+    for (int i = 0; i<srcDescriptors.rows; i++) {
+        double dis1 = dists[i][0];
+        double dis2 = dists[i][1];
+        if (dis1 < dis2 * ratio_threshold) {
+            int dst_index = indices[i][0];
+            matchedSrcPts.push_back(srcPts[i]);
+            matchedDstPts.push_back(dstPts[dst_index]);
+        }
+    }
+    assert(matchedSrcPts.size() == matchedDstPts.size());    
 }
 
 void CvxImgMatch::ORBMatching(const cv::Mat & srcImg, const cv::Mat & dstImg,

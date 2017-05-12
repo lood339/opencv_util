@@ -1,18 +1,17 @@
 //
-//  cvxPoseEstimation.hpp
+//  cvx_pose_estimation.hpp
 //  LoopClosure
 //
 //  Created by jimmy on 2016-03-31.
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#ifndef cvxPoseEstimation_cpp
-#define cvxPoseEstimation_cpp
+#ifndef cvx_pose_estimation_cpp
+#define cvx_pose_estimation_cpp
 
 #include <stdio.h>
 #include "cvxImage_310.hpp"
 #include <vector>
-//#include <vil/vil_image_view.h>
 
 using std::vector;
 
@@ -30,12 +29,14 @@ public:
 struct PreemptiveRANSAC3DParameter
 {
     double dis_threshold_;    // distance threshod, unit meter
+    int sample_number_;
     int refine_camera_num_;   // refine camera using all inliers
 public:
     PreemptiveRANSAC3DParameter()
     {
         dis_threshold_ = 0.1;
         refine_camera_num_ = -1;
+        sample_number_ = 1024;
     }
     
 };
@@ -75,7 +76,9 @@ public:
                                             const cv::Mat & camera_matrix,
                                             const cv::Mat & dist_coeff,
                                             const PreemptiveRANSACParameter & param,
-                                            cv::Mat & camera_pose);
+                                            cv::Mat & camera_pose,
+                                            cv::Mat & rvec,
+                                            cv::Mat & tvec);
     
     // wld_pts: estimated points, had outliers
     static bool preemptiveRANSAC3D(const vector<cv::Point3d> & camera_pts,

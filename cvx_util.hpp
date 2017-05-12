@@ -1,13 +1,13 @@
 //
-//  cvxUtil.hpp
+//  cvx_util.hpp
 //  RGB_RF
 //
 //  Created by jimmy on 2016-05-27.
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#ifndef cvxUtil_cpp
-#define cvxUtil_cpp
+#ifndef cvx_util_cpp
+#define cvx_util_cpp
 
 #include <stdio.h>
 #include <vector>
@@ -29,6 +29,14 @@ public:
     }
     
     static void splitFilename (const string& str, string &path, string &file);
+    
+    // quantilization method
+    // interval: resolution, the width of bin
+    // nBin: tobal number of bins
+    static unsigned value_to_bin_number(double v_min, double interval, double value, const unsigned nBin);
+    
+    // bin: bin index
+    static double bin_number_to_value(double v_min, double interval, int bin);
     
     template <typename T>
     static vector<size_t> sortIndices(const vector<T> &v) {

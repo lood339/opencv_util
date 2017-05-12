@@ -8,6 +8,7 @@
 
 #include "ms7ScenesUtil.hpp"
 #include <iostream>
+#include <opencv2/core/eigen.hpp>
 
 using cv::Mat;
 using std::cout;
@@ -17,7 +18,7 @@ Mat Ms7ScenesUtil::read_pose_7_scenes(const char *file_name)
 {
     Mat P = Mat::zeros(4, 4, CV_64F);
     FILE *pf = fopen(file_name, "r");
-    if(file_name==NULL)
+    if(pf == NULL)
     {
         cout<<file_name<<endl;
     }
@@ -32,6 +33,20 @@ Mat Ms7ScenesUtil::read_pose_7_scenes(const char *file_name)
     fclose(pf);
     //    cout<<"pose is "<<P<<endl;
     return P;
+}
+
+bool Ms7ScenesUtil::read_pose_7_scenes(const char *file_name, Eigen::Affine3d& affine)
+{
+    cv::Mat pose = Ms7ScenesUtil::read_pose_7_scenes(file_name);
+    Eigen::Matrix4d eigen_pose;
+    cv2eigen(pose, eigen_pose);
+    
+    Eigen::Matrix3d r = eigen_pose.block(0, 0, 3, 3);
+    Eigen::Vector3d t(eigen_pose(0, 3), eigen_pose(1, 3), eigen_pose(2, 3));
+    affine.linear() = r;
+    affine.translation() = t;
+    
+    return true;
 }
 
 
@@ -554,6 +569,173 @@ bool Ms7ScenesUtil::load_prediction_result_with_color(const char *file_name,
     assert(img_pts.size() == candidate_color_pred.size());
     printf("read %lu prediction and ground truth points.\n", wld_pts_gt.size());
     
+    return true;
+}
+
+bool Ms7ScenesUtil::load_prediction_result_with_distance(const char *file_name,
+                                                         string & rgb_img_file,
+                                                         string & depth_img_file,
+                                                         string & camera_pose_file,
+                                                         vector<cv::Point2d> & img_pts,
+                                                         vector<cv::Point3d> & wld_pts_gt,
+                                                         vector<vector<cv::Point3d> > & candidate_wld_pts_pred,
+                                                         vector<vector<double> > & candidate_feature_dists)
+                                         
+{
+    assert(file_name);
+    FILE *pf = fopen(file_name, "r");
+    if (!pf) {
+        printf("Error, can not read from %s\n", file_name);
+        return false;
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s", buf);
+        rgb_img_file = string(buf);
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s", buf);
+        depth_img_file = string(buf);
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s\n", buf);   // remove the last \n
+        camera_pose_file = string(buf);
+    }
+    
+    {
+        char dummy_buf[1024] = {NULL};
+        fgets(dummy_buf, sizeof(dummy_buf), pf);
+        printf("%s\n", dummy_buf);
+    }
+    
+    while (1) {
+        double val[5] = {0.0};
+        int ret = fscanf(pf, "%lf %lf %lf %lf %lf", &val[0], &val[1],
+                         &val[2], &val[3], &val[4]);
+        if (ret != 5) {
+            break;
+        }
+        img_pts.push_back(cv::Point2d(val[0], val[1]));
+        wld_pts_gt.push_back(cv::Point3d(val[2], val[3], val[4]));
+       
+        
+        int num = 0;
+        ret = fscanf(pf, "%d", &num);
+        assert(ret == 1);
+        
+        vector<cv::Point3d> wld_pts_pred;
+        vector<double> feat_dists;
+        for (int i = 0; i<num; i++) {
+            ret = fscanf(pf, "%lf %lf %lf %lf", &val[0], &val[1], &val[2], &val[3]);
+            assert(ret == 4);
+            wld_pts_pred.push_back(cv::Point3d(val[0], val[1], val[2]));
+            feat_dists.push_back(val[3]);
+        }
+        candidate_wld_pts_pred.push_back(wld_pts_pred);
+        candidate_feature_dists.push_back(feat_dists);
+    }
+    fclose(pf);
+    
+    assert(img_pts.size() == wld_pts_gt.size());
+    assert(img_pts.size() == candidate_wld_pts_pred.size());
+    assert(img_pts.size() == candidate_feature_dists.size());
+    printf("read %lu prediction and ground truth points.\n", wld_pts_gt.size());
+    return true;
+}
+
+bool Ms7ScenesUtil::load_prediction_result_with_uncertainty(const char *file_name,
+                                             string & rgb_img_file,
+                                             string & depth_img_file,
+                                             string & camera_pose_file,
+                                             vector<Eigen::Vector2d> & img_pts,
+                                             vector<Eigen::Vector3d> & wld_pts_gt,
+                                             vector<vector<Eigen::Vector3d> > & candidate_wld_pts_pred,
+                                             vector<vector<Eigen::Matrix3d> > & candidate_wld_pts_pred_covariance,
+                                             vector<vector<double> > & candidate_feature_dists)
+{
+    assert(file_name);
+    FILE *pf = fopen(file_name, "r");
+    if (!pf) {
+        printf("Error, can not read from %s\n", file_name);
+        return false;
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s", buf);
+        rgb_img_file = string(buf);
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s", buf);
+        depth_img_file = string(buf);
+    }
+    
+    {
+        char buf[1024] = {NULL};
+        fscanf(pf, "%s\n", buf);   // remove the last \n
+        camera_pose_file = string(buf);
+    }
+    
+    {
+        char dummy_buf[1024] = {NULL};
+        fgets(dummy_buf, sizeof(dummy_buf), pf);
+        printf("%s\n", dummy_buf);
+    }
+    
+    while (1) {
+        double val[5] = {0.0};
+        int ret = fscanf(pf, "%lf %lf %lf %lf %lf", &val[0], &val[1],
+                         &val[2], &val[3], &val[4]);
+        if (ret != 5) {
+            break;
+        }
+        img_pts.push_back(Eigen::Vector2d(val[0], val[1]));
+        wld_pts_gt.push_back(Eigen::Vector3d(val[2], val[3], val[4]));
+        
+        
+        int num = 0;
+        ret = fscanf(pf, "%d", &num);
+        assert(ret == 1);
+        
+        vector<Eigen::Vector3d> wld_pts_pred;
+        vector<Eigen::Matrix3d> wld_pts_pred_cov;
+        vector<double> feat_dists;
+        for (int i = 0; i<num; i++) {
+            ret = fscanf(pf, "%lf %lf %lf %lf", &val[0], &val[1], &val[2], &val[3]);
+            assert(ret == 4);
+            wld_pts_pred.push_back(Eigen::Vector3d(val[0], val[1], val[2]));
+            feat_dists.push_back(val[3]);
+            
+            // read covariance matrix
+            Eigen::Matrix3d cov;
+            for (int j = 0; j<3; j++) {
+                for (int k = 0; k<3; k++) {
+                    double cur_val = 0.0;
+                    ret = fscanf(pf, "%lf", &cur_val);
+                    assert(ret == 1);
+                    cov(j, k) = cur_val;
+                }
+            }
+            wld_pts_pred_cov.push_back(cov);
+        }
+        candidate_wld_pts_pred.push_back(wld_pts_pred);
+        candidate_wld_pts_pred_covariance.push_back(wld_pts_pred_cov);
+        candidate_feature_dists.push_back(feat_dists);
+    }
+    fclose(pf);
+    
+    assert(img_pts.size() == wld_pts_gt.size());
+    assert(img_pts.size() == candidate_wld_pts_pred.size());
+    assert(img_pts.size() == candidate_wld_pts_pred_covariance.size());
+    assert(img_pts.size() == candidate_feature_dists.size());
+    printf("read %lu prediction and ground truth points.\n", wld_pts_gt.size());
     return true;
 }
 
