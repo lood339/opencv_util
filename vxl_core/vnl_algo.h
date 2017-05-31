@@ -79,10 +79,7 @@ public:
                                            const vector<std::pair<Eigen::Vector3d, Eigen::Vector3d> >& camera_lines,
                                                         // matrix size, 6 x 6
                                            const Eigen::Affine3d& init_pose,
-                                           Eigen::Affine3d& refined_pose);
-    
-    
-    
+                                           Eigen::Affine3d& refined_pose);  
     
                             
     

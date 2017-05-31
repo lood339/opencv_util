@@ -595,6 +595,7 @@ public:
         }
         
         Eigen::Matrix3d inv_r = R.inverse();
+        
         // 2. line constraint
         for (unsigned i = 0; i<camera_lines_infinite_.size(); i++)  {
             for (unsigned j = 0; j<world_line_pts_group_[i].size(); j++) {
@@ -603,7 +604,9 @@ public:
                 Eigen::Vector3d c_p = inv_r * (p - translation);  // camera coordinate
                 Eigen::Vector3d q = camera_lines_infinite_[i].projection(c_p); //@ omit lambda when calcuate q
                 Eigen::Vector3d delta = c_p - q;
-                Eigen::Matrix3d lambda = world_line_pts_precision_[i][j];
+                // C' = RCR^T
+                Eigen::Matrix3d lambda = inv_r * world_line_pts_precision_[i][j] * R;
+                //Eigen::Matrix3d lambda = world_line_pts_precision_[i][j];
                 
                 double dist = delta.transpose() * lambda * delta;
                 if (std::isnan(dist) || dist < 0.0) {

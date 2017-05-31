@@ -11,7 +11,7 @@
 #include "cvx_line.h"
 #include <iostream>
 #include "vgl_algo.h"
-
+#include <opencv2/photo.hpp>
 
 using std::cout;
 using std::endl;
@@ -326,5 +326,40 @@ bool CvxRGBD::detect3DLines(const cv::Mat & color_img,
     
     //printf("find %lu line segment\n", line_segments.size());
     
+    return true;
+}
+
+bool CvxRGBD::depthInpaint(cv::Mat & depth_img,
+                           const unsigned char no_depth_mask)
+{
+    assert(depth_img.type() == CV_16UC1);
+    
+    int height = depth_img.rows;
+    int width  = depth_img.cols;
+    
+    // depth image with 8UC format
+    cv::Mat depth(height, width, CV_8UC1);
+    double min_v, max_v;
+    cv::minMaxLoc(depth_img, &min_v, &max_v);
+    
+    double scale = 255.0/(max_v + 100.0);
+    depth_img.convertTo(depth, CV_8UC1, scale);
+    
+    cv::Mat temp, temp2;
+    
+    // 1 step - downsize for performance, use a smaller version of depth image
+    cv::Mat small_depth;
+    resize(depth, small_depth, cv::Size(), 0.2, 0.2);
+    
+    // 2 step - inpaint only the masked "unknown" pixels
+    cv::inpaint(small_depth, (small_depth == no_depth_mask), temp, 5.0, cv::INPAINT_TELEA);
+    
+    // 3 step - upscale to original size and replace inpainted regions in original depth image
+    cv::resize(temp, temp2, depth.size());
+    temp2.copyTo(depth, (depth == no_depth_mask)); // add to the original signal
+    
+    cv::Mat converted_depth = depth_img.clone();
+    depth.convertTo(converted_depth, CV_16UC1, 1.0/scale);
+    converted_depth.copyTo(depth_img, (depth_img == no_depth_mask));
     return true;
 }
