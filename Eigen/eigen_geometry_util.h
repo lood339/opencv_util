@@ -18,6 +18,8 @@ public:
     
     static Eigen::Matrix3d vector2SkewSymmetricMatrix(const Eigen::Vector3d & v);
     
+    
+    
 };
 
 #endif /* defined(__PointLineReloc__eigen_geometry_util__) */

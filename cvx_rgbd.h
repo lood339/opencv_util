@@ -102,6 +102,11 @@ public:
                               const cv::Mat & camera_coordinate,
                               const RGBDLineParameter & line_param,
                               vector<RGBDLineSegment> & lines);
+    
+    
+    // depth_img: input and output
+    static bool depthInpaint(cv::Mat & depth_img,
+                             const unsigned char no_depth_mask);
 
     
 };

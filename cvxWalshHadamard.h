@@ -34,6 +34,7 @@ public:
                            const int kernelNum,
                            vector<Eigen::VectorXf> & features);
     
+    
     // WH feature without first pattern (all positive)
     static
     bool generateWHFeatureWithoutFirstPattern(const cv::Mat & rgb_image,
@@ -41,6 +42,7 @@ public:
                            const int patchSize,
                            const int kernelNum,
                            vector<Eigen::VectorXf> & features);
+    
     
 };
 

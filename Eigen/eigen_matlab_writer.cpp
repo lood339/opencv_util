@@ -53,6 +53,16 @@ void EigenMatlabWriter::matrix_filewrite(const T & eigen_matrix, const char* fil
     printf("write to %s\n", file_name);
 }
 
+template <class T>
+void EigenMatlabWriter::write_vector(const vector<T>& data, const char*file_name, const char * var_name)
+{
+    Eigen::VectorXd d(data.size());
+    for (int i = 0; i<data.size(); i++) {
+        d[i] = (double)data[i];
+    }
+    EigenMatlabWriter::matrix_filewrite<Eigen::VectorXd>(d, file_name, var_name);
+}
+
 
 // matrix
 template void EigenMatlabWriter::matrix_filewrite(const Eigen::MatrixXd & eigen_matrix, const char* file_name, const char * var_name);
@@ -62,3 +72,9 @@ template void EigenMatlabWriter::matrix_filewrite(const Eigen::MatrixXi & eigen_
 // vector
 template void EigenMatlabWriter::matrix_filewrite(const Eigen::VectorXd & eigen_matrix, const char* file_name, const char * var_name);
 template void EigenMatlabWriter::matrix_filewrite(const Eigen::VectorXf & eigen_matrix, const char* file_name, const char * var_name);
+
+// vector
+template void EigenMatlabWriter::write_vector(const vector<double>& data, const char*file_name, const char * var_name);
+template void EigenMatlabWriter::write_vector(const vector<float>& data, const char*file_name, const char * var_name);
+
+

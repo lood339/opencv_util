@@ -15,7 +15,7 @@ bool CvxWalshHadamard::generateWHFeature(const cv::Mat & image,
                                                    const int kernelNum,                                                   
                                                    vector<Eigen::VectorXf> & features)
 {
-    assert(image.type() == CV_8UC3);
+    assert(image.type() == CV_8UC3 || image.type() == CV_8UC1 || image.type() == CV_8UC4);
     assert(patchSize == 4 || patchSize == 8 || patchSize == 32 || patchSize == 64 || patchSize == 128);
     assert(kernelNum <= patchSize * patchSize);
     
@@ -42,6 +42,7 @@ bool CvxWalshHadamard::generateWHFeature(const cv::Mat & image,
         
         // test for channel
         Eigen::VectorXf feat(kernelNum * single_channels.size());
+        
         for (int cha = 0; cha < single_channels.size(); cha++) {
             cv::Mat patch;
             single_channels[cha](cv::Rect(x, y, patchSize, patchSize)).copyTo(patch);
@@ -54,16 +55,19 @@ bool CvxWalshHadamard::generateWHFeature(const cv::Mat & image,
             }
             
             // release memory
-            free(setup->patternProjections);
             destroyMatrix(setup->patternImage);
+            free(setup->patternProjections);
+            
             setup->patternProjections = NULL;
             setup->patternImage = NULL;
         }
+         
         feat /= feat.norm();
         features.push_back(feat);
     }
     
-    destroyImageHead(pattern);
+    destroyWHSetup(setup);
+    destroyImageHead(pattern);      
     
     assert(features.size() == pts.size());
     return true;
@@ -75,7 +79,7 @@ bool CvxWalshHadamard::generateWHFeatureWithoutFirstPattern(const cv::Mat & rgb_
                                                             const int kernelNum,
                                                             vector<Eigen::VectorXf> & features)
 {
-    assert(rgb_image.type() == CV_8UC3);
+    assert(rgb_image.type() == CV_8UC3 || CV_8UC4);
     
     vector<Eigen::VectorXf> wh_features;
     CvxWalshHadamard::generateWHFeature(rgb_image, pts, patchSize, kernelNum, wh_features);

@@ -36,6 +36,10 @@ public:
 
     static
     void detectLines(const double * const image_data, int width, int height, std::vector<LSDLineSegment2D> & line_segments);
+    
+    // shorten linesegments to the max_length
+    static
+    void shortenLineSegments(std::vector<LSD::LSDLineSegment2D>& lines, double max_length = 25);
 };
 
 
