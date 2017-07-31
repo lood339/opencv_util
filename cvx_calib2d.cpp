@@ -13,7 +13,8 @@
 #include "cvx_imgproc.hpp"
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
-#include "vnl_algo_homography.h"
+//#include "vnl_algo_homography.h"
+#include "cvx_gl_homography.h"
 #include <iostream>
 #include <opencv2/plot.hpp>
 #include "eigen_matlab_writer.h"
@@ -348,7 +349,7 @@ namespace cvx {
         //cout<<"inlier point number "<<inlier_src_pts.size()<<" . Percentage "<<1.0*inlier_src_pts.size()/mask.size()<<endl;
         
         Eigen::Matrix3d estimated_homo;
-        bool is_estimated = VnlAlgoHomography::estimateHomography(inlier_src_pts, inlier_dst_pts,
+        bool is_estimated = cvx_gl::estimateHomography(inlier_src_pts, inlier_dst_pts,
                                                                   inlier_src_lines, inlier_dst_line_pts,
                                                                   h_eigen, estimated_homo);
         if (is_estimated) {
@@ -392,6 +393,176 @@ namespace cvx {
         return true;
     }
     
+    
+    bool findHomography(const cv::Mat& src_image,
+                        const cv::Mat& dst_image,
+                        const vector<cv::Point2f>& src_points,
+                        const vector<cv::Point2f>& dst_points,
+                        const int method,
+                        cv::Mat & output_warp,
+                        double& warp_quality,
+                        double search_length,
+                        int block_size)
+    {
+        assert(src_image.type() == CV_8UC1 && dst_image.type() == CV_8UC1);
+        assert(src_image.size == dst_image.size);
+        assert(method == 0 || method == 1);
+        
+        const int rows = src_image.rows;
+        const int cols = src_image.cols;
+        const double reproj_threshold = 3.0;
+        const double edge_to_line_reproj_threshold = 1.5;
+        
+        // step 1: estimate homography using RANSAC
+        vector<uchar> mask;
+        Mat h = findHomography(src_points, dst_points, CV_RANSAC, reproj_threshold, mask);
+        if (h.empty()) {
+            return false;
+        }
+        assert(h.type() == CV_64FC1);
+        
+        h.copyTo(output_warp);
+        if (method == 0) {
+            return true;
+        }
+            
+        
+        // using both points and lines
+        // step 2. edge tracking
+        Mat src_temp, dst_temp;
+        src_image.convertTo(src_temp, CV_64FC1);
+        if (!src_temp.isContinuous()) {
+            src_temp = src_temp.clone();
+        }
+        dst_image.convertTo(dst_temp, CV_64FC1);
+        if (!dst_temp.isContinuous()) {
+            dst_temp = dst_temp.clone();
+        }
+        
+        // step 3: detect lines and divide into short line segment
+        std::vector<LSD::LSDLineSegment2D> lines1;
+        std::vector<LSD::LSDLineSegment2D> lines2;
+        LSD::detectLines((double *) src_temp.data, cols, rows, lines1);
+        LSD::detectLines((double *) dst_temp.data, cols, rows, lines2);
+        LSD::shortenLineSegments(lines1, 25);    // divide long lines to short lines
+        LSD::shortenLineSegments(lines2, 25);
+        
+        
+        // warp source line segment
+        vector<cv::Vec2f> src_start_points(lines1.size());
+        vector<cv::Vec2f> src_end_points(lines1.size());
+        vector<cv::Vec2f> warped_src_start_points;
+        vector<cv::Vec2f> warped_src_end_points;
+        for (int i = 0; i<lines1.size(); i++) {
+            src_start_points[i] = cv::Vec2f(lines1[i].x1, lines1[i].y1);
+            src_end_points[i] = cv::Vec2f(lines1[i].x2, lines1[i].y2);
+        }
+        cv::perspectiveTransform(src_start_points, warped_src_start_points, h);
+        cv::perspectiveTransform(src_end_points, warped_src_end_points, h);
+        assert(warped_src_start_points.size() == warped_src_end_points.size());
+        
+        
+        vector<cv::Vec4f> src_lines(lines1.size());
+        vector<cv::Vec4f> warped_src_lines(lines1.size());  // warped lines by initial homography
+        vector<cv::Vec4f> dst_lines(lines2.size());
+        vector<cv::Vec2f> dst_centers;
+        cv::Size sz(cols, rows);
+        for (int i = 0; i<lines1.size(); i++) {
+            cv::Vec2f p1 = warped_src_start_points[i];
+            cv::Vec2f p2 = warped_src_end_points[i];
+            // tolerance of out-of-image points
+            warped_src_lines[i] = cv::Vec4f(p1[0], p1[1], p2[0], p2[1]);
+            src_lines[i] = cv::Vec4f(lines1[i].x1, lines1[i].y1, lines1[i].x2, lines1[i].y2);
+        }
+        
+        for (int i = 0; i<lines2.size(); i++) {
+            dst_lines[i] = cv::Vec4f(lines2[i].x1, lines2[i].y1, lines2[i].x2, lines2[i].y2);
+        }
+        
+        cvx::trackLineSegmentCenter(warped_src_lines,
+                                    dst_lines,
+                                    dst_centers,
+                                    sz,
+                                    cv::noArray(), cv::noArray(),
+                                    search_length, block_size);
+        //printf("src number %lu, dst center number %lu \n", warped_src_lines.size(), dst_centers.size());
+        assert(warped_src_lines.size() == dst_centers.size());
+        Eigen::Matrix3d inv_h;
+        Eigen::Matrix3d h_eigen;
+        cv2eigen(h.inv(), inv_h);
+        cv2eigen(h, h_eigen);
+        
+        vector<Eigen::ParametrizedLine<double, 2> > inlier_src_lines;
+        vector<Eigen::Vector2d> inlier_dst_line_pts;
+        for (int i = 0; i<dst_centers.size(); i++) {
+            Eigen::Vector3d p(dst_centers[i][0], dst_centers[i][1], 1.0);
+            p = inv_h * p;
+            p /= p.z();
+            
+            Eigen::Vector2d q1(src_lines[i][0], src_lines[i][1]);
+            Eigen::Vector2d q2(src_lines[i][2], src_lines[i][3]);
+            Eigen::ParametrizedLine<double, 2> line = Eigen::ParametrizedLine<double, 2>::Through(q1, q2);
+            double dist = line.distance(Eigen::Vector2d(p.x(), p.y()));
+            // inlier
+            if (dist < edge_to_line_reproj_threshold) {
+                inlier_src_lines.push_back(line);
+                inlier_dst_line_pts.push_back(Eigen::Vector2d(dst_centers[i][0], dst_centers[i][1]));
+            }
+        }
+        cout<<"inlier edge number "<<inlier_src_lines.size()<<" . Percentage "<<1.0*inlier_src_lines.size()/src_lines.size()<<endl;
+        
+        vector<Eigen::Vector2d> inlier_src_pts;
+        vector<Eigen::Vector2d> inlier_dst_pts;
+        for (int i = 0; i<mask.size(); i++) {
+            if (mask[i] != 0) {
+                Eigen::Vector2d p(src_points[i].x, src_points[i].y);
+                Eigen::Vector2d q(dst_points[i].x, dst_points[i].y);
+                inlier_src_pts.push_back(p);
+                inlier_dst_pts.push_back(q);
+            }
+        }
+        //cout<<"inlier point number "<<inlier_src_pts.size()<<" . Percentage "<<1.0*inlier_src_pts.size()/mask.size()<<endl;
+        
+        // Step 4: estimate homography using point-to-point and point-on-line constraint
+        Eigen::Matrix3d estimated_homo;
+        bool is_estimated = cvx_gl::estimateHomography(inlier_src_pts, inlier_dst_pts,
+                                                       inlier_src_lines, inlier_dst_line_pts,
+                                                       h_eigen, estimated_homo);
+        if (is_estimated) {
+            eigen2cv(estimated_homo, h);
+            inv_h = estimated_homo.inverse();
+        }
+        
+        h.copyTo(output_warp);
+        
+        // step 5. analyze estimation quality
+        if (warp_quality >= 0) {
+            // inlier line space coverage
+            Mat space = Mat::zeros(rows, cols, CV_8UC1);
+            for (int i = 0; i<dst_centers.size(); i++) {
+                // from dst point to source edge
+                double dist = transformedPointLineDistance(inv_h, dst_centers[i][0], dst_centers[i][1],
+                                                           src_lines[i][0], src_lines[i][1],
+                                                           src_lines[i][2], src_lines[i][3]);
+                // inlier
+                if (dist < edge_to_line_reproj_threshold) {
+                    cv::Rect r(dst_centers[i][0] - block_size/2, dst_centers[i][1] - block_size/2, block_size, block_size);
+                    r.x = std::max(0, r.x);
+                    r.y = std::max(0, r.y);
+                    if (r.x + r.width >= cols) {
+                        r.width = cols - r.x;
+                    }
+                    if (r.y + r.height >= rows) {
+                        r.height = rows - r.y;
+                    }
+                    space(r) = 255;
+                }
+            }
+            warp_quality = 1.0 * cv::countNonZero(space)/(rows * cols);
+        }
+        
+        return true;
+    }
     
 }
 

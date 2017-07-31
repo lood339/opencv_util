@@ -30,8 +30,7 @@ Mat Ms7ScenesUtil::read_pose_7_scenes(const char *file_name)
             P.at<double>(row, col) = v;
         }
     }
-    fclose(pf);
-    //    cout<<"pose is "<<P<<endl;
+    fclose(pf);   
     return P;
 }
 
