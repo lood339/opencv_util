@@ -26,9 +26,16 @@ namespace cvx_pgl {
         virtual ~calibration_matrix() {}
         
         calibration_matrix(double focal_length,
-                           const Eigen::Vector2d& principal_point, double x_scale, double y_scale, double skew );
+                           const Eigen::Vector2d& principal_point,
+                           double x_scale = 1, double y_scale = 1, double skew = 0);
         
         calibration_matrix( const Eigen::Matrix3d& K );
+        
+        //: Get the calibration matrix.
+        Eigen::Matrix3d get_matrix() const;
+        
+        double focal_length() const { return focal_length_; }
+        Vector2d principal_point() const { return principal_point_; }
 
         
     protected:

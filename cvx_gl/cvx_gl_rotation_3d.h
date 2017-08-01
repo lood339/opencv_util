@@ -71,6 +71,12 @@ namespace cvx_gl {
             return q_.normalized().toRotationMatrix();
         }
         
+        //: Output unit quaternion.
+        Eigen::Quaternion<double> as_quaternion() const
+        {
+            return q_;
+        }
+        
     protected:
         Eigen::Quaternion<double> q_;
         

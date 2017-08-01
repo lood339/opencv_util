@@ -29,7 +29,6 @@ namespace cvx_pgl {
         
         perspective_camera( const perspective_camera& cam );
         
-        
         void set_calibration( const calibration_matrix& K );
         void set_camera_center( const Eigen::Vector3d& camera_center );
         void set_translation(const Eigen::Vector3d& t);

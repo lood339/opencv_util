@@ -19,9 +19,9 @@ namespace cvx_pgl {
     {}
     
     
-    calibration_matrix::calibration_matrix(
-                                              double focal_length,
-                                              const Eigen::Vector2d& principal_point, double x_scale, double y_scale, double skew ) :
+    calibration_matrix::calibration_matrix(double focal_length,
+                                           const Eigen::Vector2d& principal_point,
+                                           double x_scale, double y_scale, double skew ) :
     
     focal_length_( focal_length ),
     principal_point_( principal_point ),
@@ -52,6 +52,19 @@ namespace cvx_pgl {
         principal_point_ = Eigen::Vector2d( (scale_factor*K(0,2)), (scale_factor*K(1,2)) );
         
         assert( ( x_scale_ > 0 && y_scale_ > 0 ) || ( x_scale_ < 0 && y_scale_ < 0 ) );
+    }
+    
+    Eigen::Matrix3d calibration_matrix::get_matrix() const
+    {
+        // Construct the matrix as in H&Z.
+        Eigen::Matrix3d K = Eigen::Matrix3d::Identity();
+        K(0,0) = focal_length_*x_scale_;
+        K(1,1) = focal_length_*y_scale_;
+        K(2,2) = 1;
+        K(0,2) = principal_point_.x();
+        K(1,2) = principal_point_.y();
+        K(0,1) = skew_;
+        return K;
     }
 
     
