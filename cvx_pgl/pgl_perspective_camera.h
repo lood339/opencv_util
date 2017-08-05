@@ -11,12 +11,15 @@
 
 #include <stdio.h>
 #include <Eigen/Dense>
-#include "cvx_gl_rotation_3d.h"
-#include "cvx_pgl_calibration_matrix.h"
+#include "pgl_proj_camera.h"
+#include "pgl_calibration_matrix.h"
+
+#include "gl_rotation_3d.h"
+
 
 namespace cvx_pgl {
    
-    class perspective_camera
+    class perspective_camera : public proj_camera
     {
         using rotation3d = cvx_gl::rotation_3d;
         using calibration_matrix = cvx_pgl::calibration_matrix;
@@ -40,31 +43,11 @@ namespace cvx_pgl {
        // vgl_vector_3d<T> get_translation() const;
         const rotation3d& get_rotation() const{ return R_; }
         
-        //double focal_length() const { return K_(0, 0); }
-        //Eigen::Vector2d principal_point() const { return Eigen::Vector2d(K_(0, 2), K_(1, 2)); }
         
+    protected:
+        //: Recalculate the 3x4 camera matrix from the parameters.
+        void recompute_matrix();
         
-        
-        
-        /* @todo
-         template <class T>
-         void vpgl_perspective_camera<T>::recompute_matrix()
-         {
-         vnl_matrix_fixed<T,3,4> Pnew( (T)0 );
-         
-         // Set new projection matrix to [ I | -C ].
-         for ( int i = 0; i < 3; i++ )
-         Pnew(i,i) = (T)1;
-         Pnew(0,3) = -camera_center_.x();
-         Pnew(1,3) = -camera_center_.y();
-         Pnew(2,3) = -camera_center_.z();
-         
-         // Then multiply on left to get KR[ I | -C ].
-         this->set_matrix(K_.get_matrix()*R_.as_matrix()*Pnew);
-         }
-
-         */
-    private:
         calibration_matrix K_;
         Eigen::Vector3d camera_center_;
         rotation3d R_;

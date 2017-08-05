@@ -6,7 +6,7 @@
 //  Copyright (c) 2017 Nowhere Planet. All rights reserved.
 //
 
-#include "cvx_pgl_calibration_matrix.h"
+#include "pgl_calibration_matrix.h"
 
 namespace cvx_pgl {
     

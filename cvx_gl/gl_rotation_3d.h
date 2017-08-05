@@ -77,6 +77,9 @@ namespace cvx_gl {
             return q_;
         }
         
+        //: Make the rotation the identity (i.e. no rotation)
+        rotation_3d& set_identity() { q_ = Eigen::Quaternion<double>(1, 0, 0, 0); return *this; }
+        
     protected:
         Eigen::Quaternion<double> q_;
         

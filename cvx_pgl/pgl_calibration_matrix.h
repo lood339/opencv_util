@@ -1,5 +1,5 @@
 //
-//  cvx_pgl_calibration_matrix.h
+//  pgl_calibration_matrix.h
 //  CalibMeMatching
 //
 //  Created by jimmy on 2017-07-30.
