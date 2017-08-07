@@ -40,7 +40,6 @@ namespace cvx_pgl {
         
         const calibration_matrix & get_calibration() const{ return K_; }
         const Eigen::Vector3d& get_camera_center() const { return camera_center_; }
-       // vgl_vector_3d<T> get_translation() const;
         const rotation3d& get_rotation() const{ return R_; }
         
         

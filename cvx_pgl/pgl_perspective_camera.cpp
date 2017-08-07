@@ -40,7 +40,8 @@ namespace cvx_pgl {
     }
     void perspective_camera::set_camera_center( const Eigen::Vector3d& camera_center )
     {
-        camera_center_ = camera_center;        
+        camera_center_ = camera_center;
+        recompute_matrix();
     }
     void perspective_camera::set_translation(const Eigen::Vector3d& t)
     {
@@ -67,7 +68,7 @@ namespace cvx_pgl {
      void perspective_camera::recompute_matrix()
      {
          // Set new projection matrix to [ I | -C ].
-         proj_camera::Matrix34d Pnew;
+         Matrix34d Pnew;
          Pnew.setConstant(0);
          
          for ( int i = 0; i < 3; i++ ){

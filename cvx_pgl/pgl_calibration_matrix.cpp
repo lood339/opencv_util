@@ -36,6 +36,7 @@ namespace cvx_pgl {
     }
     
     
+    /*
     //--------------------------------------
     calibration_matrix::calibration_matrix( const Eigen::Matrix3d& K )
     {
@@ -53,6 +54,7 @@ namespace cvx_pgl {
         
         assert( ( x_scale_ > 0 && y_scale_ > 0 ) || ( x_scale_ < 0 && y_scale_ < 0 ) );
     }
+     */
     
     Eigen::Matrix3d calibration_matrix::get_matrix() const
     {

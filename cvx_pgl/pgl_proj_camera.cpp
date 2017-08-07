@@ -12,7 +12,7 @@ namespace cvx_pgl {
     
     proj_camera::proj_camera()
     {
-        
+        cached_svd_ = NULL;
     }
     
     proj_camera::~proj_camera()

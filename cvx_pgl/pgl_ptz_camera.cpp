@@ -7,6 +7,7 @@
 //
 
 #include "pgl_ptz_camera.h"
+#include <iostream>
 
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
@@ -14,22 +15,54 @@
 
 using cvx_gl::rotation_3d;
 using cvx_pgl::calibration_matrix;
+using std::cout;
+using std::endl;
+
 
 namespace cvx_pgl  {
     bool ptz_camera::set_camera(const perspective_camera& camera,
                                 const MatrixXd & wld_pts,
                                 const MatrixXd & img_pts)
     {
+        assert(wld_pts.rows() == img_pts.rows());
+        assert(wld_pts.rows() >= 2);
         K_ = camera.get_calibration();
         camera_center_ = camera.get_camera_center();
         R_ = camera.get_rotation();
         recompute_matrix();
         
         perspective_camera estimatedCamera;
-     //   bool isEsimated = vpgl_ptz_camera::estimatePTZByFixingModelPositionRotation(wld_pts, img_pts, camera, camera_center_, sr_, coeff_, ptz_, estimatedCamera);
-    //    return isEsimated;
+        bool isEsimated = ptz_camera::estimatePTZWithFixedBasePositionRotation(wld_pts, img_pts, camera,
+                                                                               camera_center_, base_rotation_, ptz_, estimatedCamera);
+        return isEsimated;
+    }
+    
+    bool ptz_camera::set_camera(const perspective_camera& camera)
+    {
+        Eigen::Vector3d dif_cc = cc_ - camera.get_camera_center();
+        if (dif_cc.norm() >= 1e-4) {
+            printf("Warning: camera center is different: %f\n", dif_cc.norm());
+            return false;
+        }
         
+        // camera base rotation
+        Eigen::Matrix3d baseRInv = rotation_3d(base_rotation_).as_matrix().inverse();
         
+        Eigen::Matrix3d R_pan_tilt = camera.get_rotation().as_matrix() * baseRInv;
+        double cos_pan = R_pan_tilt(0, 0);
+        double sin_pan = -R_pan_tilt(0, 2);
+        double cos_tilt = R_pan_tilt(1, 1);
+        double sin_tilt = -R_pan_tilt(2, 1);
+        double pan  = atan2(sin_pan, cos_pan) * 180.0 /M_PI;
+        double tilt = atan2(sin_tilt, cos_tilt) * 180.0 /M_PI;
+        ptz_[0] = pan;
+        ptz_[1] = tilt;
+        ptz_[2] = camera.get_calibration().focal_length();
+        
+        K_ = camera.get_calibration();
+        camera_center_ = camera.get_camera_center();
+        R_ = camera.get_rotation();
+        recompute_matrix();
         return true;
     }
     
@@ -93,8 +126,7 @@ namespace cvx_pgl  {
                     
                     fx[idx++] = img_pts_.row(i).x() - u;
                     fx[idx++] = img_pts_.row(i).y() - v;
-                }
-                
+                }                
                 return 0;
             }
             
@@ -115,6 +147,38 @@ namespace cvx_pgl  {
                 camera.set_calibration(K);
                 camera.set_camera_center(camera_center_);
                 camera.set_rotation(R);
+            }
+            
+            void reprojectionError(const Eigen::VectorXd& x,
+                                   Eigen::MatrixXd & mean,
+                                   Eigen::MatrixXd & cov)
+            {
+                double pan  = x[0];
+                double tilt = x[1];
+                double fl = x[2];
+                
+                calibration_matrix K(fl, principal_point_);
+                Eigen::Matrix3d R_pan_tilt =  matrixFromPanYTiltX(pan, tilt);
+                Eigen::Matrix3d R = R_pan_tilt * base_rotation_;
+                
+                perspective_camera camera;
+                camera.set_calibration(K);
+                camera.set_camera_center(camera_center_);
+                camera.set_rotation(R);
+                
+                // loop each points
+                Eigen::MatrixXd error(wld_pts_.rows(), 2);
+                for (int i = 0; i<wld_pts_.rows(); i++) {
+                    Vector3d p = wld_pts_.row(i);
+                    double u = 0.0, v = 0.0;
+                    camera.project(p.x(), p.y(), p.z(), u, v);
+                    
+                    error(i, 0) = img_pts_.row(i).x() - u;
+                    error(i, 1) = img_pts_.row(i).y() - v;
+                }
+                mean = error.colwise().mean();
+                MatrixXd centered = error.rowwise() - error.colwise().mean();
+                cov = (centered.adjoint() * centered) / error.rows();
             }
         };
     }
@@ -167,6 +231,9 @@ namespace cvx_pgl  {
         ptz[1] = x[1];
         ptz[2] = x[2];
         
+        Eigen::MatrixXd mean;
+        Eigen::MatrixXd cov;
+        opt_functor.reprojectionError(x, mean, cov);
         return true;
     }
     
@@ -189,6 +256,36 @@ namespace cvx_pgl  {
         
         m = R_tilt * R_pan;
         return m;
+    }
+    
+    Eigen::Vector2d point2PanTilt(const Eigen::Vector2d& pp,
+                                  const Eigen::Vector3d& ptz,
+                                  const Eigen::Vector2d& point)
+    
+    {
+        Eigen::Vector2d point_pan_tilt;
+        double dx = point.x() - pp.x();
+        double dy = point.y() - pp.y();
+        double fl = ptz.z();
+        double delta_pan = atan2(dx, fl) * 180.0/M_PI;
+        double delta_tilt = atan2(dy, fl) * 180.0/M_PI;
+        point_pan_tilt[0] = ptz[0] + delta_pan;
+        point_pan_tilt[1] = ptz[1] - delta_tilt; // oppositive direction of y
+        return point_pan_tilt;
+    }
+    
+    Eigen::Vector2d panTilt2Point(const Eigen::Vector2d& pp,
+                                  const Eigen::Vector3d& ptz,
+                                  const Eigen::Vector2d& point_pan_tilt)
+    {
+        double delta_pan  = (point_pan_tilt[0] - ptz[0]) * M_PI/180.0;
+        double delta_tilt = (point_pan_tilt[1] - ptz[1]) * M_PI/180.0;
+        double fl = ptz[2];
+        double delta_x = fl * tan(delta_pan);
+        double delta_y = fl * tan(delta_tilt);
+        
+        Eigen::Vector2d point(pp.x() + delta_x, pp.y() - delta_y); // oppositive direction of y
+        return point;
     }
 
 }

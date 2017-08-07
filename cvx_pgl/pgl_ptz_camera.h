@@ -29,18 +29,30 @@ namespace cvx_pgl {
     public:
         ptz_camera(){}
         
+        // @brief fl = 2000 is an arbitrary number
         ptz_camera(const Vector2d& pp, const Vector3d& cc,
-                   const Vector3d& base_rot, double pan, double tilt, double fl):pp_(pp),
+                   const Vector3d& base_rot, double pan = 0, double tilt = 0, double fl = 2000):pp_(pp),
         cc_(cc), base_rotation_(base_rot), ptz_(pan, tilt, fl){}
+        
+        
+        // camera: has same camera center and base rotation
+        // O(1)
+        bool set_camera(const perspective_camera& camera);
         
         // assume common parameters are fixed.
         // convert general perspective camera to ptz camera
         // wld_pts: nx3 matrix, world coordinate
         // img_pts: nx2 matrix, image coordinate
+        // O(n * iteration)
         bool set_camera(const perspective_camera& camera,
                         const MatrixXd & wld_pts,
                         const MatrixXd & img_pts);
         
+        
+        double pan(void) { return ptz_[0];}
+        double tilt(void) { return ptz_[1]; }
+        double focal_length(void) { return ptz_[2];}
+        Vector3d ptz(void) { return ptz_; }
         
         
         static bool estimatePTZWithFixedBasePositionRotation (const MatrixXd & wld_pts,
@@ -55,6 +67,14 @@ namespace cvx_pgl {
     
     // pan, tilt: degree
     Eigen::Matrix3d matrixFromPanYTiltX(double pan, double tilt);
+    
+    Eigen::Vector2d point2PanTilt(const Eigen::Vector2d& pp,
+                                  const Eigen::Vector3d& ptz,
+                                  const Eigen::Vector2d& point);
+    
+    Eigen::Vector2d panTilt2Point(const Eigen::Vector2d& pp,
+                                  const Eigen::Vector3d& ptz,
+                                  const Eigen::Vector2d& pan_tilt);
 }
 
 

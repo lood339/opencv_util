@@ -13,14 +13,14 @@
 #include <Eigen/Dense>
 #include "gl_homg_point_3d.h"
 #include "gl_homg_point_2d.h"
+#include "pgl_types.h"
 
 namespace cvx_pgl {
     using cvx_gl::homg_point_2d;
     using cvx_gl::homg_point_3d;
+    using cvx_pgl::Matrix34d;
     
     class proj_camera {
-    public:
-        typedef Eigen::Matrix<double, 3, 4> Matrix34d;
         
     public:
         proj_camera();
@@ -33,6 +33,8 @@ namespace cvx_pgl {
         virtual void project(const double x, const double y, const double z, double& u, double& v) const;
 
         Eigen::JacobiSVD<Eigen::MatrixXd>* svd() const;
+        
+        const Matrix34d& get_matrix() const{ return P_; }
         
         //: Setters mirror the constructors and return true if the setting was successful.
         // In subclasses these should be redefined so that they won't allow setting of
