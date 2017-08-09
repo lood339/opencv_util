@@ -39,6 +39,9 @@ namespace cvx_pgl {
         // O(1)
         bool set_camera(const perspective_camera& camera);
         
+        // O(1)
+        bool set_ptz(const Vector3d& ptz);
+        
         // assume common parameters are fixed.
         // convert general perspective camera to ptz camera
         // wld_pts: nx3 matrix, world coordinate
@@ -55,6 +58,16 @@ namespace cvx_pgl {
         Vector3d ptz(void) { return ptz_; }
         
         
+        // project pan tilt ray to (x, y)
+        Eigen::Vector2d project(double pan, double tilt) const;
+        
+        // back project an image pixel to a (pan, tilt)
+        Eigen::Vector2d back_project(double x, double y) const;
+        
+        
+        // optimize pan, tilt and focal length given world point and image point correspondences
+        // wld_pts: n x 3
+        // img_pts: n x 2
         static bool estimatePTZWithFixedBasePositionRotation (const MatrixXd & wld_pts,
                                                               const MatrixXd & img_pts,
                                                               const perspective_camera & init_camera,

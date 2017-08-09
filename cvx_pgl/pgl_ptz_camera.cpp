@@ -66,6 +66,28 @@ namespace cvx_pgl  {
         return true;
     }
     
+    bool ptz_camera::set_ptz(const Vector3d& ptz)
+    {
+        ptz_ = ptz;
+        
+        Eigen::Matrix3d R = matrixFromPanYTiltX(pan(), tilt()) * cvx_gl::rotation_3d(base_rotation_).as_matrix();
+        K_ = cvx_pgl::calibration_matrix(focal_length(), pp_);
+        R_ = cvx_gl::rotation_3d(R);
+        recompute_matrix();
+        return true;
+    }
+    
+    
+    Eigen::Vector2d ptz_camera::project(double pan, double tilt) const
+    {
+        return panTilt2Point(pp_, ptz_, Eigen::Vector2d(pan, tilt));
+    }
+    
+    Eigen::Vector2d ptz_camera::back_project(double x, double y) const
+    {
+        return point2PanTilt(pp_, ptz_, Eigen::Vector2d(x, y));
+    }
+    
     namespace {
         struct PTZFromPointFunctor
         {
