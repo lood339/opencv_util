@@ -309,5 +309,114 @@ namespace cvx_pgl  {
         Eigen::Vector2d point(pp.x() + delta_x, pp.y() - delta_y); // oppositive direction of y
         return point;
     }
+    
+    struct SphericalPanTiltFunctor
+    {
+        typedef double Scalar;
+        
+        typedef Eigen::VectorXd InputType;
+        typedef Eigen::VectorXd ValueType;
+        typedef Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> JacobianType;
+        
+        enum {
+            InputsAtCompileTime = Eigen::Dynamic,
+            ValuesAtCompileTime = Eigen::Dynamic
+        };
+        
+        const Eigen::Vector2d pp_;
+        const vector<Eigen::Vector2d> pan_tilt_; // spherical space
+        const vector<Eigen::Vector2d> image_point_;
+        
+        int m_inputs;
+        int m_values;
+        
+        SphericalPanTiltFunctor(const Eigen::Vector2d & pp,
+                                const vector<Eigen::Vector2d> & pan_tilt,
+                                const vector<Eigen::Vector2d> & image_point):
+        pp_(pp), pan_tilt_(pan_tilt), image_point_(image_point)
+        {
+            assert(pan_tilt_.size() == image_point_.size());
+            m_inputs = 3;
+            m_values = (int)pan_tilt.size() * 2;
+            assert(m_values >= 4);
+        }
+        
+        
+        int operator()(const Eigen::VectorXd &x, Eigen::VectorXd &fx) const
+        {
+            double pan  = x[0];
+            double tilt = x[1];
+            double fl = x[2];
+            Eigen::Vector3d ptz(pan, tilt, fl);
+            
+            // loop each points
+            for (int i = 0; i<pan_tilt_.size(); i++) {
+                Vector2d cur_pan_tilt = pan_tilt_[i];
+                // projection from spherical space to image space
+                Vector2d projected_pan_tilt = panTilt2Point(pp_, ptz, cur_pan_tilt);
+                fx[2*i + 0] = image_point_[i].x() - projected_pan_tilt.x();
+                fx[2*i + 1] = image_point_[i].y() - projected_pan_tilt.y();
+            }
+            return 0;
+        }
+        
+        double meanReprojectionError(const Eigen::VectorXd& x)
+        {
+            double pan  = x[0];
+            double tilt = x[1];
+            double fl = x[2];
+            Eigen::Vector3d ptz(pan, tilt, fl);
+            
+            // loop each points
+            double avg_dist = 0.0;
+            for (int i = 0; i<pan_tilt_.size(); i++) {
+                Vector2d cur_pan_tilt = pan_tilt_[i];
+                // projection from spherical space to image space
+                Vector2d projected_pan_tilt = panTilt2Point(pp_, ptz, cur_pan_tilt);
+                double dist = (image_point_[i] - projected_pan_tilt).norm();
+                avg_dist += dist;
+            }
+            return avg_dist/pan_tilt_.size();
+        }
+
+        
+        int inputs() const { return m_inputs; }// inputs is the dimension of x.
+        int values() const { return m_values; } // "values" is the number of f_i and
+    };
+
+    
+    double optimizePTZ(const Eigen::Vector2d & pp,
+                     const vector<Eigen::Vector2d> & pan_tilt,
+                     const vector<Eigen::Vector2d> & image_point,
+                     const Vector3d& init_ptz,
+                     Vector3d & opt_ptz)
+    {
+        assert(pan_tilt.size() == image_point.size());
+        
+        // optimize pan, tilt and focal length
+        SphericalPanTiltFunctor opt_functor(pp, pan_tilt, image_point);
+        Eigen::NumericalDiff<SphericalPanTiltFunctor> dif_functor(opt_functor);
+        Eigen::LevenbergMarquardt<Eigen::NumericalDiff<SphericalPanTiltFunctor>, double> lm(dif_functor);
+        lm.parameters.ftol = 1e-6;
+        lm.parameters.xtol = 1e-6;
+        lm.parameters.maxfev = 500;
+        
+        Eigen::VectorXd x(3);
+        x[0] = init_ptz[0];
+        x[1] = init_ptz[1];
+        x[2] = init_ptz[2];
+        
+        double error = opt_functor.meanReprojectionError(x);
+        //printf("reprojection error after: %lf\n", error);
+        Eigen::LevenbergMarquardtSpace::Status status = lm.minimize(x);
+        //printf("LMQ status %d\n", status);
+        opt_ptz[0] = x[0];
+        opt_ptz[1] = x[1];
+        opt_ptz[2] = x[2];
+        error = opt_functor.meanReprojectionError(x);
+        //printf("reprojection error before: %lf\n", error);
+        
+        return error;
+    }
 
 }

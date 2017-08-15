@@ -36,25 +36,33 @@ namespace EigenX {
     // @brief internal function. RPE report 2015 summer
     static bool focalLengthEstimation(const double a, const double b,
                                       const double c, const double d,
-                                      double& fl)
+                                      double& fl,
+                                      bool verbose = true)
     {
         double delta = (d*d *(a+b) - 2.0*c)*(d*d *(a+b) - 2.0*c) - 4.0 *(d*d*a*b-c*c)*(d*d-1.0);
         if (delta < 0.0) {
-            printf("Error: sqrt a negative number.\n");
-            printf("delta is %f\n", delta);
+            if (verbose) {
+                printf("Error: sqrt a negative number.\n");
+                printf("delta is %f\n", delta);
+            }
             return false;
         }
         
         double numerator   = 2.0 * (d*d*a*b - c*c);
         double denominator = 2.0*c - d*d *(a+b) + sqrt(delta);
         if (denominator == 0.0) {
-            printf("Error: denominator is zero.\n");
+            if (verbose) {
+                printf("Error: denominator is zero.\n");
+            }
+            
             return false;
         }
         double fl_2 = numerator/denominator;
         if (fl_2 <= 0.0) {
-            printf("Error: focal length is not a real number. f^2 is %f\n", fl_2);
-            printf("numerator, denominator is %f %f\n", numerator, denominator);
+            if (verbose) {
+                printf("Error: focal length is not a real number. f^2 is %f\n", fl_2);
+                printf("numerator, denominator is %f %f\n", numerator, denominator);
+            }
             return false;
         }
         fl = sqrt(fl_2);
@@ -73,6 +81,20 @@ namespace EigenX {
         double delta_tilt = atan2(dy, fl) * 180.0/M_PI;
         point_pan_tilt[0] = ptz[0] + delta_pan;
         point_pan_tilt[1] = ptz[1] - delta_tilt; // oppositive direction of y
+    }
+    
+    void pointPanTilt(const Eigen::Vector2d& pp,
+                      const Eigen::Vector3d& ptz,
+                      const Eigen::Vector2d& point,
+                      Eigen::Vector2d& point_pan_tilt)
+    {
+        double dx = point.x() - pp.x();
+        double dy = point.y() - pp.y();
+        double fl = ptz.z();
+        double delta_pan = atan2(dx, fl) * 180.0/M_PI;
+        double delta_tilt = atan2(dy, fl) * 180.0/M_PI;
+        point_pan_tilt[0] = ptz[0] + delta_pan;
+        point_pan_tilt[1] = ptz[1] - delta_tilt; // oppositive direction of y        
     }
 
     static Eigen::Matrix3f matrixFromPanYTiltX(double pan, double tilt)
@@ -123,7 +145,7 @@ namespace EigenX {
         Eigen::Vector3f rotated_axis_z = matrixFromPanYTiltX(pan2 - pan1, tilt2 - tilt1) * z_axis;
         double d = z_axis.dot(rotated_axis_z);  // angular difference of two angles
         double fl = 0;
-        bool is_estimated = focalLengthEstimation(a, b, c, d, fl);
+        bool is_estimated = focalLengthEstimation(a, b, c, d, fl, false);
         if (!is_estimated) {
             return false;
         }
@@ -140,5 +162,26 @@ namespace EigenX {
         
         return true;
     }
+    
+    bool ptzFromTwoPoints(const Eigen::Vector2d& pan_tilt1,
+                          const Eigen::Vector2d& pan_tilt2,
+                          const Eigen::Vector2d& point1,
+                          const Eigen::Vector2d& point2,
+                          const Eigen::Vector2d& pp,
+                          Eigen::Vector3d& ptz)
+    {
+        Eigen::Vector3f ptz_temp;
+        bool is_ok = ptzFromTwoPoints(Eigen::Vector2f(pan_tilt1.x(), pan_tilt1.y()),
+                                      Eigen::Vector2f(pan_tilt2.x(), pan_tilt2.y()),
+                                      Eigen::Vector2f(point1.x(), point1.y()),
+                                      Eigen::Vector2f(point2.x(), point2.y()),
+                                      Eigen::Vector2f(pp.x(), pp.y()),
+                                      ptz_temp);
+        ptz[0] = ptz_temp[0];
+        ptz[1] = ptz_temp[1];
+        ptz[2] = ptz_temp[2];
+        return is_ok;        
+    }
+
     
 }; // namespace EigenX

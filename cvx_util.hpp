@@ -30,6 +30,9 @@ public:
     
     static void splitFilename (const string& str, string &path, string &file);
     
+    // folder: /Users/chenjLOCAL/Desktop/*.txt
+    static void readFilenames(const char *folder, vector<string> & files);
+    
     // quantilization method
     // interval: resolution, the width of bin
     // nBin: tobal number of bins

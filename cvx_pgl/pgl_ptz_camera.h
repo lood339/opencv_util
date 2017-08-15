@@ -75,7 +75,6 @@ namespace cvx_pgl {
                                                               const Vector3d & rod,
                                                               Vector3d & ptz,
                                                               perspective_camera & estimated_camera);
-
     };
     
     // pan, tilt: degree
@@ -88,6 +87,15 @@ namespace cvx_pgl {
     Eigen::Vector2d panTilt2Point(const Eigen::Vector2d& pp,
                                   const Eigen::Vector3d& ptz,
                                   const Eigen::Vector2d& pan_tilt);
+    
+    // optimize pan, tilt and focal length by minimizing re-projection error
+    // return: mean reprojection error
+    double optimizePTZ(const Eigen::Vector2d & pp,
+                       const vector<Eigen::Vector2d> & pan_tilt,
+                       const vector<Eigen::Vector2d> & image_point,
+                       const Vector3d& init_ptz,
+                       Vector3d & opt_ptz);
+    
 }
 
 

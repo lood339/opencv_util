@@ -36,6 +36,11 @@ namespace EigenX {
                       const Eigen::Vector2f& point,
                       Eigen::Vector2f& point_pan_tilt);
     
+    void pointPanTilt(const Eigen::Vector2d& pp,
+                      const Eigen::Vector3d& pan_tilt_focal_length,
+                      const Eigen::Vector2d& point,
+                      Eigen::Vector2d& point_pan_tilt);
+    
     
     // calculate pan, tilt and focal length from two (estimated) pan, tilt and zooms
     // panTilt: pan, tilt angles in degrees
@@ -48,6 +53,13 @@ namespace EigenX {
                           const Eigen::Vector2f& point2,
                           const Eigen::Vector2f& pp,
                           Eigen::Vector3f& ptz);
+    
+    bool ptzFromTwoPoints(const Eigen::Vector2d& pan_tilt1,
+                          const Eigen::Vector2d& pan_tilt2,
+                          const Eigen::Vector2d& point1,
+                          const Eigen::Vector2d& point2,
+                          const Eigen::Vector2d& pp,
+                          Eigen::Vector3d& ptz);
     
     
     
