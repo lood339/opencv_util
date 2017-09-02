@@ -9,6 +9,10 @@
 #include "ptz_pose_estimation.h"
 #include "eigen_geometry_util.h"
 #include "pgl_ptz_camera.h"
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 namespace ptz_pose_opt {
     namespace {
@@ -92,7 +96,7 @@ namespace ptz_pose_opt {
     {
         
         assert(image_points.size() == candidate_pan_tilt.size());
-        if (image_points.size() < 100) {
+        if (image_points.size() < 25) {
             return false;
         }
         
@@ -116,7 +120,8 @@ namespace ptz_pose_opt {
             const Eigen::Vector2d pan_tilt2 = candidate_pan_tilt[k2][0];
             const Eigen::Vector2d point1 = image_points[k1];
             const Eigen::Vector2d point2 = image_points[k2];
-            Eigen::Vector3d ptz;
+            Eigen::Vector3d ptz;            
+            
             
             bool is_valid = EigenX::ptzFromTwoPoints(pan_tilt1, pan_tilt2, point1, point2, pp, ptz);
             if (is_valid) {
@@ -142,7 +147,7 @@ namespace ptz_pose_opt {
         }
         
         if (hypotheses.size() < K) {
-            printf("Error: not enough hypotheses.\n");
+            printf("Error: not enough hypotheses %lu vs %d.\n", hypotheses.size(), K);
             return false;
         }
         
@@ -210,7 +215,7 @@ namespace ptz_pose_opt {
                     hypotheses[i].ptz_ = opt_ptz;
                     hypotheses[i].inlier_indices_.clear();
                     hypotheses[i].inlier_candidate_pan_tilt_indices_.clear();
-                    if (hypotheses.size() <= 2 && verbose) {
+                    if (hypotheses.size() == 1 && verbose) {
                         printf("hypotheses rank %lu, reprojection error %f pixels\n", hypotheses.size(), reprojection_error);
                     }
                 }

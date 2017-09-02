@@ -28,7 +28,7 @@ namespace ptz_pose_opt {
         PTZPreemptiveRANSACParameter()
         {
             reprojection_error_threshold_ = 2.0; //
-            sample_number_ = 64;
+            sample_number_ = 32;
         }
     };
     
