@@ -39,8 +39,8 @@ if cap.isOpened() != True:
     print('Error, can not read from %s' % video_file_name)
     exit()
     
-length = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
-fps    = cap.get(cv2.cv.CV_CAP_PROP_FPS)
+length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+fps    = cap.get(cv2.CAP_PROP_FPS)
 
 print('FPS is %f\n' % fps)
 print('set FPS is %f\n' % fps_set)
@@ -51,7 +51,7 @@ def millisecondsFromIndex(index, fps):
 
 def getFrameByIndex(cap, index, fps = 60.0):
     t = millisecondsFromIndex(index, fps)
-    cap.set(cv2.cv.CV_CAP_PROP_POS_MSEC, t)
+    cap.set(cv2.CAP_PROP_POS_MSEC, t)
     ret, frame = cap.read()
     if ret == True:
         return frame

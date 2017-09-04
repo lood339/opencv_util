@@ -17,6 +17,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/imgproc/imgproc_c.h"
 #include <vector>
+#include "eigenVLFeatSIFT.h"
 
 using std::vector;
 
@@ -30,6 +31,11 @@ class CvxImgMatch
 public:
     static void SIFTMatching(const cv::Mat & srcImg, const cv::Mat & dstImg,
                              const SIFTMatchingParameter & param, 
+                             vector<cv::Point2d> & srcPts, vector<cv::Point2d> & dstPts);
+    
+    static void SIFTMatching(const vector<std::shared_ptr<sift_keypoint> >& src_keypoints,
+                             const vector<std::shared_ptr<sift_keypoint> >& dst_keypoints,
+                             const SIFTMatchingParameter & param,
                              vector<cv::Point2d> & srcPts, vector<cv::Point2d> & dstPts);
     
     // nearest neighbor matching

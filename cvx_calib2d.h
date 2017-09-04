@@ -34,12 +34,36 @@ namespace cvx {
     // method: 0 --> point, 1 --> point and edge
     // output_warp: estimated homography,
     // warp_quality: space coverate of inlier edge center point, input and output, negative value for ignore this value
+    // search length: parameter in point-on-line correspondence, pixel number on side of line
+    // block_size: size of block used in computing the distance in line segment tracking
+    // assumption: source image and destination image has narrow baseline (from similar view)
     bool findHomography(const cv::Mat& src_image,
                         const cv::Mat& dst_image,
                         const int method,                       
                         cv::Mat & output_warp,
                         double& warp_quality,
-                        double search_length = 10, int block_size = 25);
+                        double search_length = 10,
+                        int block_size = 25);
+    
+    // default image size 1280 x 720
+    // find inter frame homography using both point and lines
+    // src_points:
+    // dst_points: points correspondence frome source and destination image
+    // method: 0 --> point, 1 --> point and edge
+    // output_warp: estimated homography,
+    // warp_quality: space coverate of inlier edge center point, input and output, negative value for ignore this value
+    // search length: parameter in point-on-line correspondence, pixel number on side of line
+    // block_size: size of block used in computing the distance in line segment tracking
+    // assumption: source image and destination image has Wide baseline (from different view)
+    bool findHomography(const cv::Mat& src_image,
+                        const cv::Mat& dst_image,
+                        const vector<cv::Point2f>& src_points,
+                        const vector<cv::Point2f>& dst_points,
+                        const int method,
+                        cv::Mat & output_warp,
+                        double& warp_quality,
+                        double search_length = 10,
+                        int block_size = 25);
     
 }
 

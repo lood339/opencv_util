@@ -10,6 +10,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/core_c.h>
 
+#include <dirent.h>
+#include <string.h>
+
 
 vector<double>
 CvxUtil:: generateRandomNumbers(double min_val, double max_val, int rnd_num)
@@ -32,6 +35,39 @@ CvxUtil::splitFilename (const string& str, string &path, string &file)
     path = str.substr(0, found);
     file = str.substr(found + 1);
 }
+
+void CvxUtil::readFilenames(const char *folder, vector<string> & file_names)
+{
+    const char *post_fix = strrchr(folder, '.');
+    string pre_str(folder);
+    pre_str = pre_str.substr(0, pre_str.rfind('/') + 1);
+    //printf("pre_str is %s\n", pre_str.c_str());
+    
+    assert(post_fix);
+    // vcl_vector<vcl_string> file_names;
+    DIR *dir = NULL;
+    struct dirent *ent = NULL;
+    if ((dir = opendir (pre_str.c_str())) != NULL) {
+        /* print all the files and directories within directory */
+        while ((ent = readdir (dir)) != NULL) {
+            const char *cur_post_fix = strrchr( ent->d_name, '.');
+            if (!cur_post_fix ) {
+                continue;
+            }
+            //printf("cur post_fix is %s %s\n", post_fix, cur_post_fix);
+            
+            if (!strcmp(post_fix, cur_post_fix)) {
+                file_names.push_back(pre_str + string(ent->d_name));
+                //  cout<<file_names.back()<<endl;
+            }
+            
+            //printf ("%s\n", ent->d_name);
+        }
+        closedir (dir);
+    }
+    printf("read %lu files\n", file_names.size());
+}
+
 
 
 unsigned
