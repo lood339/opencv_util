@@ -94,9 +94,8 @@ namespace ptz_pose_opt {
                                    Eigen::Vector3d & ptz,
                                    bool verbose)
     {
-        
         assert(image_points.size() == candidate_pan_tilt.size());
-        if (image_points.size() < 25) {
+        if (image_points.size() <= 12) {
             return false;
         }
         
@@ -146,8 +145,8 @@ namespace ptz_pose_opt {
             printf("init ptz camera parameter number is %lu\n", hypotheses.size());
         }
         
-        if (hypotheses.size() < K) {
-            printf("Error: not enough hypotheses %lu vs %d.\n", hypotheses.size(), K);
+        if (hypotheses.size() < K/4) {
+            printf("Error: not enough hypotheses %lu vs %d.\n", hypotheses.size(), K/4);
             return false;
         }
         
