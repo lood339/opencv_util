@@ -354,33 +354,41 @@ namespace cvx {
                                 vector<cv::Vec2f>& _centers,
                                 const cv::Size& sz,
                                 cv::OutputArray center_patch_distance,
-                                cv::OutputArray _dist_map,
-                                double search_length, int block_size)
+                                cv::InputOutputArray _dist_map,
+                                double search_length,
+                                int block_size,
+                                bool given_dist_map)
     {
         assert(block_size%2 == 1);
         assert(_centers.size() == 0);
-        assert(_src.size() > 0);
+        assert(_src.size() >= 0);
         assert(_dst.size() > 0);
         
         const int cols = sz.width;
         const int rows = sz.height;
         
         // 1. create a distance map in dst image
-        Mat bw = Mat(rows, cols, CV_8UC1, cv::Scalar(255));
         Mat dist_map;
-        for (int i = 0; i<_dst.size(); i++) {
-            cv::line(bw, cv::Point(_dst[i][0], _dst[i][1]), cv::Point(_dst[i][2], _dst[i][3]),
-                     cv::Scalar::all(0), 1, 0);
-        }
-       
+        Mat bw = Mat(rows, cols, CV_8UC1, cv::Scalar(255));
+        
         //imshow("Binary Image", bw);
         // Perform the distance transform algorithm
         // point on edges has zero distance
-        cv::distanceTransform(bw, dist_map, CV_DIST_L2, 3);
-        assert(dist_map.type() == CV_32FC1);
-        if (_dist_map.needed()) {
-            dist_map.copyTo(_dist_map);
-        }        
+        if (!given_dist_map) {
+            assert(_dst.size() > 0);
+            for (int i = 0; i<_dst.size(); i++) {
+                cv::line(bw, cv::Point(_dst[i][0], _dst[i][1]), cv::Point(_dst[i][2], _dst[i][3]),
+                         cv::Scalar::all(0), 1, 0);
+            }
+            cv::distanceTransform(bw, dist_map, CV_DIST_L2, 3);
+            assert(dist_map.type() == CV_32FC1);
+            if (_dist_map.needed()) {
+                dist_map.copyTo(_dist_map);
+            }
+        }
+        else {
+            _dist_map.copyTo(dist_map);
+        }
         
         // 2. search correspondence of each src point center in the distance map
         Mat src_edge_map = Mat(rows, cols, CV_8UC1, cv::Scalar(0));
@@ -482,7 +490,7 @@ namespace cvx {
             }
             Mat(min_patch_distances).copyTo(center_patch_distance);
         }
-    }   
+    }    
 }
 
 

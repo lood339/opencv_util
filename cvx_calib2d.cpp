@@ -13,11 +13,10 @@
 #include "cvx_imgproc.hpp"
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
-//#include "vnl_algo_homography.h"
 #include "cvx_gl_homography.h"
 #include <iostream>
 #include <opencv2/plot.hpp>
-#include "eigen_matlab_writer.h"
+//#include "eigen_matlab_writer.h"
 
 namespace cvx {
     // from opencv
@@ -221,6 +220,31 @@ namespace cvx {
         return dist;
     }
     
+    // detect lsd lines in image and cut them to short line segment
+    static std::vector<cv::Vec4f> lsdLineDetection(const cv::Mat & im)
+    {
+        assert(im.type() == CV_8UC1);
+        
+        // to doulbe image
+        Mat im_temp;
+        im.convertTo(im_temp, CV_64FC1);
+        if (!im_temp.isContinuous()) {
+            im_temp = im_temp.clone();
+        }
+        
+        const int cols = im.cols;
+        const int rows = im.rows;
+        std::vector<LSD::LSDLineSegment2D> lsd_lines;
+        LSD::detectLines((double *) im_temp.data, cols, rows, lsd_lines);
+        
+        LSD::shortenLineSegments(lsd_lines, 25);    // divide long lines to short lines
+        vector<cv::Vec4f> ret_lines(lsd_lines.size());
+        for (int i = 0; i<lsd_lines.size(); i++) {
+            ret_lines[i] = cv::Vec4f(lsd_lines[i].x1, lsd_lines[i].y1, lsd_lines[i].x2, lsd_lines[i].y2);
+        }
+        return ret_lines;
+    }
+    
     
     bool findHomography(const cv::Mat& src_image,
                         const cv::Mat& dst_image,
@@ -277,6 +301,7 @@ namespace cvx {
         
         // using both points and lines
         // step 3. edge tracking
+        /*
         Mat src_temp, dst_temp;
         src_image.convertTo(src_temp, CV_64FC1);
         if (!src_temp.isContinuous()) {
@@ -294,17 +319,12 @@ namespace cvx {
         LSD::detectLines((double *) dst_temp.data, cols, rows, lines2);
         LSD::shortenLineSegments(lines1, 25);    // divide long lines to short lines
         LSD::shortenLineSegments(lines2, 25);
+         */
         
-        vector<cv::Vec4f> src_lines(lines1.size());
-        vector<cv::Vec4f> dst_lines(lines2.size());
+        vector<cv::Vec4f> src_lines = lsdLineDetection(src_image);
+        vector<cv::Vec4f> dst_lines = lsdLineDetection(dst_image);
         vector<cv::Vec2f> dst_centers;
         cv::Size sz(cols, rows);
-        for (int i = 0; i<lines1.size(); i++) {
-            src_lines[i] = cv::Vec4f(lines1[i].x1, lines1[i].y1, lines1[i].x2, lines1[i].y2);
-        }
-        for (int i = 0; i<lines2.size(); i++) {
-            dst_lines[i] = cv::Vec4f(lines2[i].x1, lines2[i].y1, lines2[i].x2, lines2[i].y2);
-        }
         
         cvx::trackLineSegmentCenter(src_lines, dst_lines, dst_centers, sz,
                                     cv::noArray(), cv::noArray(),

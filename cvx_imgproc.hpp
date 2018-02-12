@@ -71,7 +71,7 @@ namespace cvx {
     // centers: Ouput, tracked center point on the destination image, same size as src
     // image_size: size of image
     // center_point_patch_distance: distance from a patch to the destination image
-    // dist_map: edge distance map of destination image, CV_32FC1
+    // dist_map: edge distance map of destination image, CV_32FC1, in or output
     // search_length: search distance along the line direction
     // block_size: size of block used in computing the distance
     void trackLineSegmentCenter(const vector<cv::Vec4f>& src,
@@ -79,8 +79,10 @@ namespace cvx {
                                 vector<cv::Vec2f>& centers,
                                 const cv::Size& image_size,
                                 cv::OutputArray center_point_patch_distance = cv::noArray(),
-                                cv::OutputArray dist_map = cv::noArray(),
-                                double search_length = 10, int block_size = 25);
+                                cv::InputOutputArray dist_map = cv::noArray(),
+                                double search_length = 10,
+                                int block_size = 25,
+                                bool given_dist_map = false);
     
     
     

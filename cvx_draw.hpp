@@ -73,9 +73,7 @@ public:
             int b = rand()%256;
             cv::line(matches, p1, p2, cv::Scalar(b, g, r), 1);
         }
-    }
-
-    
+    }    
     
     // draw cross around the point
     static void draw_cross(cv::Mat & image,
@@ -84,7 +82,11 @@ public:
                            const int length = 5);
     
     template< class T>
-    static void draw_cross_template(cv::Mat & image, const vector<T> & pts, const cv::Scalar & color, const int length = 5, const int thickness = 1)
+    static void draw_cross_template(cv::Mat & image,
+                                    const vector<T> & pts,
+                                    const cv::Scalar & color,
+                                    const int length = 5,
+                                    const int thickness = 1)
     {
         assert(image.channels() == 3);
         

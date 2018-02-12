@@ -63,7 +63,7 @@ namespace cvx {
                         cv::Mat & output_warp,
                         double& warp_quality,
                         double search_length = 10,
-                        int block_size = 25);
+                        int block_size = 25);    
     
 }
 

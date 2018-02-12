@@ -93,3 +93,4 @@ void LSD::shortenLineSegments(std::vector<LSD::LSDLineSegment2D>& lines, double 
     }
     lines = short_lines;
 }
+

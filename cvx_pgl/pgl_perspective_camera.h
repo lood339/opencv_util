@@ -43,6 +43,10 @@ namespace cvx_pgl {
         const rotation3d& get_rotation() const{ return R_; }
         
         
+        // new added
+        Eigen::Vector2d project2d(const Eigen::Vector2d &p) const;
+        
+        
     protected:
         //: Recalculate the 3x4 camera matrix from the parameters.
         void recompute_matrix();

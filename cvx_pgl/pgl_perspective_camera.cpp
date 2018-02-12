@@ -63,6 +63,13 @@ namespace cvx_pgl {
         recompute_matrix();
     }
     
+    Eigen::Vector2d perspective_camera::project2d(const Eigen::Vector2d &p) const
+    {
+        double u = 0.0, v = 0.0;
+        this->project(p.x(), p.y(), 0.0, u, v);
+        return Eigen::Vector2d(u, v);
+    }
+    
     
     
      void perspective_camera::recompute_matrix()
