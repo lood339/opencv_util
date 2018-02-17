@@ -82,7 +82,7 @@ namespace cvx {
                                 cv::InputOutputArray dist_map = cv::noArray(),
                                 double search_length = 10,
                                 int block_size = 25,
-                                bool given_dist_map = false);
+                                bool given_dist_map = false);  
     
     
     

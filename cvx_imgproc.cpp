@@ -362,7 +362,7 @@ namespace cvx {
         assert(block_size%2 == 1);
         assert(_centers.size() == 0);
         assert(_src.size() >= 0);
-        assert(_dst.size() > 0);
+        assert(_dst.size() >= 0);
         
         const int cols = sz.width;
         const int rows = sz.height;

@@ -261,7 +261,8 @@ bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::Parame
     return true;
 }
 
-bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & output_line,
+bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points,
+                     Eigen::ParametrizedLine<double, 3> & output_line,
                      vector<unsigned>& output_inlier_index)
 {
     if(line_points.size() <= 3) {
@@ -315,6 +316,73 @@ bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::Parame
         Eigen::Vector3d org_point(line3d[3], line3d[4], line3d[5]);
         Eigen::Vector3d direction(line3d[0], line3d[1], line3d[2]);
         best_line = Eigen::ParametrizedLine<double, 3>(org_point, direction);
+        output_inlier_index = inlier_index;
+    }
+    
+    if (best_inlier_num >= min_inlier_ratio * N) {
+        //printf("inlier ratio %f \n", 1.0 * best_inlier_num/N);
+        output_line = best_line;
+        return true;
+    }
+    else {
+        //printf("inlier ratio %f \n", 1.0 * best_inlier_num/N);
+        return false;
+    }
+
+    return true;
+}
+
+bool fitLine2DRansac(const vector<Eigen::Vector2d> & points,
+                     Eigen::ParametrizedLine<double, 2> & output_line,
+                     vector<int>& output_inlier_index,
+                     const double threshold)
+{
+    if(points.size() <= 2) {
+        return false;
+    }
+    const int num_iteration = 100;
+    const int N = (int)points.size();
+    double min_inlier_ratio = 0.5;
+    int best_inlier_num = 0;
+    
+    Eigen::ParametrizedLine<double, 2> best_line;
+    for (int i = 0; i<num_iteration; i++) {
+        // randomly pick 2 points and fit a line
+        int k1 = 0;
+        int k2 = 0;
+        
+        do{
+            k1 = rand()%N;
+            k2 = rand()%N;
+        }while (k1 == k2);
+        
+        Eigen::ParametrizedLine<double, 2> min_config_line = Eigen::ParametrizedLine<double, 2>::Through(points[k1], points[k2]);
+        // count inlier number
+        vector<int> inlier_index;
+        for (int j = 0; j<points.size(); j++) {
+            double dist = min_config_line.distance(points[j]);
+            if (dist < threshold) {
+                inlier_index.push_back(j);
+                
+            }
+        }
+        if (inlier_index.size() <= best_inlier_num) {
+            continue;
+        }
+        best_inlier_num = (int)inlier_index.size();
+        
+        // fit a better model
+        vector<cv::Point2d> inlier_points(inlier_index.size());
+        for (int j = 0; j < inlier_index.size(); j++) {
+            Eigen::Vector2d p = points[inlier_index[j]];
+            inlier_points[j] = cv::Point2d(p.x(), p.y());
+        }
+        cv::Vec4d line2d;
+        cv::fitLine(inlier_points, line2d, CV_DIST_L2, 0, 0.01, 0.01);
+        
+        Eigen::Vector2d org_point(line2d[2], line2d[3]);
+        Eigen::Vector2d direction(line2d[0], line2d[1]);
+        best_line = Eigen::ParametrizedLine<double, 2>(org_point, direction);
         output_inlier_index = inlier_index;
     }
     

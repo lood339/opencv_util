@@ -79,8 +79,14 @@ bool fitLine3D(const vector<Eigen::Vector3d > & line_points, Eigen::Parametrized
 
 bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & line);
 
-bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & line,
+bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points,
+                     Eigen::ParametrizedLine<double, 3> & line,
                      vector<unsigned>& inlier_index);
+
+bool fitLine2DRansac(const vector<Eigen::Vector2d> & points,
+                     Eigen::ParametrizedLine<double, 2> & line,
+                     vector<int>& inlier_index,
+                     const double inlier_distance_threshold = 1.0); 
 
 bool fitLine3DRansac(const vector<Eigen::Vector3d > & line_points, Eigen::ParametrizedLine<double, 3> & line,
                      std::pair<Eigen::Vector3d, Eigen::Vector3d>& line_end_point);
