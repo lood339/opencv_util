@@ -8,7 +8,7 @@
 
 #include "cvx_model_tracking2d.h"
 #include "lsd_line_segment.h"
-#include "cvx_imgproc.hpp"
+#include "imgproc.hpp"
 #include "cvx_pgl_perspective_camera.h"
 #include "cvx_draw.hpp"
 #include "cvx_line.h"

@@ -6,7 +6,7 @@
 //  Copyright © 2016 jimmy. All rights reserved.
 //
 
-#include "cvx_imgproc.hpp"
+#include "imgproc.hpp"
 #include "cvx_draw.hpp"
 #include <numeric>
 
