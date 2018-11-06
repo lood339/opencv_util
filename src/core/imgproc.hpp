@@ -30,10 +30,6 @@ public:
     // grad: CV_8UC1
     static void imageGradient(const Mat & color_img, Mat & grad);
     
-    // gradient orientation in [0, 2 * pi)
-    static Mat gradientOrientation(const Mat & img, const int gradMagThreshold = 0);    
-    
-    
     // centroid orientation (as in ORB) https://en.wikipedia.org/wiki/Image_moment
     // ouput: angles atan2(m01, m10)
     static void centroidOrientation(const Mat & img, const vector<cv::Point2d> & pts, const int patchSize,
@@ -50,9 +46,21 @@ public:
     
     // left side of line should be brighter than right side area
     static bool estimateLineOrientation(const Mat& gry_img, const cv::Point2d & startPoint,
-                                        const cv::Point2d & endPoint,const int line_width);    
-    
+                                        const cv::Point2d & endPoint,const int line_width);
 };
+
+namespace cvx {
+    namespace imgproc {
+        // gradient orientation in [0, 2 * pi)
+        Mat gradientOrientation(const Mat & img, const int grad_mag_threshold = 0);
+        
+        // output: grad_x, grad_y, grad_mag CV_64FC1
+        void gradient(const Mat& img,
+                      Mat& grad_x,
+                      Mat& grad_y,
+                      Mat& grad_mag);
+    }
+}
 
 namespace cvx {
     // adaptive non-maximal suppression from "Multi-image matching using multi-scale oriented patches". CVPR 2015
@@ -73,7 +81,7 @@ namespace cvx {
     // center_point_patch_distance: distance from a patch to the destination image
     // dist_map: edge distance map of destination image, CV_32FC1, in or output
     // search_length: search distance along the line direction
-    // block_size: size of block used in computing the distance
+    // block_size: size of block used in computing the distance, square
     void trackLineSegmentCenter(const vector<cv::Vec4f>& src,
                                 const vector<cv::Vec4f>& dst,
                                 vector<cv::Vec2f>& centers,

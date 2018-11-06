@@ -31,11 +31,25 @@ namespace cvx {
     // edge_image: CV_8UC1, edge map
     // refined_camera: refined camera
     // return: true, camera is refined; false, the refined camera is the input camera
-    // use RANSAC inside
+    // use RANSAC for line fitting but not for camera parameter estimation
     bool trackEdgeImage(const cvx_pgl::perspective_camera& init_camera,
                         const vector<std::pair<Vector2d, Vector2d> >& model_lines,
                         const cv::Mat& edge_image,
                         cvx_pgl::perspective_camera& refined_camera);
+    
+    // implement the edge search method in paper "Automatic rectification of long image sequences"
+    // ACCV 2004
+    // init_camera: initial camera pose
+    // model_points: points in the 2D model, unit meter
+    // image: CV_8UC1, input gray image
+    // refined_camera: refined camera
+    // return: true, camera is refined; false, the refined camera is the input camera
+    // use RANSAC inside
+    bool edgeSearch(const cvx_pgl::perspective_camera& init_camera,
+                    const vector<Vector2d>& model_points,
+                    const vector<Vector2d>& model_point_normal_direction,
+                    const cv::Mat& image,
+                    cvx_pgl::perspective_camera& refined_camera);
     
 }
 

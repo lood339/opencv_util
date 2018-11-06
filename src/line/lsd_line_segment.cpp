@@ -12,7 +12,9 @@
 #include <math.h>
 #include "lsd.h"
 
-void LSD::detectLines(const double * const input_image_data, int width, int height, std::vector<LSDLineSegment2D> & line_segments)
+void LSD::detectLines(const double * const input_image_data,
+                      int width, int height,
+                      std::vector<LSDLineSegment2D> & line_segments)
 {
     double * imageData = NULL;
     double * out = NULL;

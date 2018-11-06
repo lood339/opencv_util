@@ -15,6 +15,84 @@ using cv::Vec3b;
 using cv::Vec6f;
 using cv::Mat;
 
+namespace cvx {
+    namespace imgproc {
+        Mat gradientOrientation(const Mat & img, const int grad_mag_threshold)
+        {
+            assert(img.type() == CV_8UC1 || img.type() == CV_8UC3);
+            
+            Mat src_gray;
+            int scale = 1;
+            int delta = 0;
+            int ddepth = CV_16S;
+            
+            GaussianBlur( img, img, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
+            /// Convert it to gray
+            if (img.channels() == 3) {
+                cvtColor( img, src_gray, CV_BGR2GRAY );
+            }
+            else {
+                src_gray = img;
+            }
+            
+            /// Generate grad_x and grad_y
+            Mat grad_x, grad_y;
+            Mat abs_grad_x, abs_grad_y;
+            Mat grad;
+            /// Gradient X
+            Scharr( src_gray, grad_x, ddepth, 1, 0, scale, delta, cv::BORDER_DEFAULT );
+            convertScaleAbs( grad_x, abs_grad_x );
+            /// Gradient Y
+            Scharr( src_gray, grad_y, ddepth, 0, 1, scale, delta, cv::BORDER_DEFAULT );
+            convertScaleAbs( grad_y, abs_grad_y );
+            
+            grad_x.convertTo(grad_x, CV_64FC1);
+            grad_y.convertTo(grad_y, CV_64FC1);
+            addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad );
+            
+            cv::threshold(grad, grad, grad_mag_threshold, 1.0, cv::THRESH_BINARY); // grad 0 or 1
+            grad.convertTo(grad, CV_64FC1);
+            
+            Mat orientation;
+            cv::phase(grad_x, grad_y, orientation, false);
+            
+            // set small gradient positions as zero, other graduent as the same
+            Mat threshold_orientation = orientation.mul(grad);            
+            return threshold_orientation;
+        }
+        void gradient(const Mat& img,
+                      Mat& grad_x,
+                      Mat& grad_y,
+                      Mat& grad_mag)
+        {
+            assert(img.type() == CV_8UC1 || img.type() == CV_8UC3);
+            
+            Mat src_gray;
+            int scale = 1;
+            int delta = 0;
+            int ddepth = CV_16S;
+            
+            GaussianBlur( img, img, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
+            /// Convert it to gray
+            if (img.channels() == 3) {
+                cvtColor( img, src_gray, CV_BGR2GRAY );
+            }
+            else {
+                src_gray = img;
+            }
+            
+            // Gradient X
+            cv::Scharr( src_gray, grad_x, ddepth, 1, 0, scale, delta, cv::BORDER_DEFAULT );
+            /// Gradient Y
+            cv::Scharr( src_gray, grad_y, ddepth, 0, 1, scale, delta, cv::BORDER_DEFAULT );
+            
+            grad_x.convertTo(grad_x, CV_64FC1);
+            grad_y.convertTo(grad_y, CV_64FC1);
+            cv::magnitude(grad_x, grad_y, grad_mag);
+        }
+    }
+}
+
 void CvxImgProc::imageGradient(const Mat & color_img, Mat & grad)
 {
     assert(color_img.type() == CV_8UC3);
@@ -44,56 +122,8 @@ void CvxImgProc::imageGradient(const Mat & color_img, Mat & grad)
     /// Total Gradient (approximate)
     addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
     assert(grad.type() == CV_8UC1);
-    
 }
 
-Mat CvxImgProc::gradientOrientation(const Mat & img, const int gradMagThreshold)
-{
-    assert(img.type() == CV_8UC1 || img.type() == CV_8UC3);
-    
-    Mat src_gray;
-    int scale = 1;
-    int delta = 0;
-    int ddepth = CV_16S;
-    
-    GaussianBlur( img, img, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
-    /// Convert it to gray
-    if (img.channels() == 3) {
-        cvtColor( img, src_gray, CV_BGR2GRAY );
-    }
-    else {
-        src_gray = img;
-    }
-    
-    /// Generate grad_x and grad_y
-    Mat grad_x, grad_y;
-    Mat abs_grad_x, abs_grad_y;
-    Mat grad;
-    /// Gradient X
-    Scharr( src_gray, grad_x, ddepth, 1, 0, scale, delta, cv::BORDER_DEFAULT );
-    convertScaleAbs( grad_x, abs_grad_x );
-    /// Gradient Y
-    Scharr( src_gray, grad_y, ddepth, 0, 1, scale, delta, cv::BORDER_DEFAULT );
-    convertScaleAbs( grad_y, abs_grad_y );
-    
-    grad_x.convertTo(grad_x, CV_64FC1);
-    grad_y.convertTo(grad_y, CV_64FC1);
-    addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad );
-    
-    cv::threshold(grad, grad, gradMagThreshold, 1.0, cv::THRESH_BINARY); // grad 0 or 1
-    grad.convertTo(grad, CV_64FC1);
-    
-    Mat orientation;
-    cv::phase(grad_x, grad_y, orientation, false);
-    
-    Mat threshold_orientation = orientation.mul(grad); // set small gradient positions as zero, other graduent as the same
-    
- //   cv::Mat vmat = CvDraw::visualize_gradient(grad, threshold_orientation);
- //   cv::imshow("orientation", vmat);
- //   cv::waitKey();
-    
-    return threshold_orientation;
-}
 
 static void CentroidOrientationICAngles(const Mat& img,
                                         const std::vector<cv::Point2d>& pts,
@@ -403,6 +433,7 @@ namespace cvx {
         vector<int> out_of_image_index;
         for (int i = 0; i<_src.size(); i++) {
             // https://stackoverflow.com/questions/8664866/draw-perpendicular-line-to-a-line-in-opencv
+            // [p1, p2] original line
             cv::Point2f p1(_src[i][0], _src[i][1]);
             cv::Point2f p2(_src[i][2], _src[i][3]);
             cv::Point2f mid_p = (p1 + p2)/2.0;
@@ -411,6 +442,7 @@ namespace cvx {
             std::swap(v.x, v.y);
             v.x *= -1.0; // clockwise rotation
             
+            // [p3, p4] perpendicular line
             cv::Point2f p3 = mid_p + search_length * v;
             cv::Point2f p4 = mid_p - search_length * v;
             cv::Point p3_img(cvRound(p3.x), cvRound(p3.y));

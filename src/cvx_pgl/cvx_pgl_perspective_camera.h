@@ -34,6 +34,16 @@ namespace cvx_pgl {
                           const perspective_camera& init_camera,
                           perspective_camera& refined_camera);
     
+    // @brief refine camera using point-to-point correspondences
+    // model_pts: points from 2D model
+    // im_pts: points from destination image
+    // init_camera: initial camera. it is close to 'good' calibration
+    // fix principal point
+    bool refineCameraRANSAC(const vector<Vector2d> & model_pts,
+                            const vector<Vector2d> & im_pts,
+                            const perspective_camera& init_camera,
+                            perspective_camera& refined_camera);
+    
     // RANSAC: using point on line estimation
     bool estimateCameraRANSAC(const vector<std::pair<Eigen::Vector2d, Eigen::Vector2d> > & model_lines,
                               const vector<Vector2d> & im_line_pts,

@@ -6,7 +6,7 @@
 //  Copyright (c) 2018 Nowhere Planet. All rights reserved.
 //
 
-#include "cvx_model_tracking2d.h"
+#include "model_tracking2d.h"
 #include "lsd_line_segment.h"
 #include "imgproc.hpp"
 #include "cvx_pgl_perspective_camera.h"
@@ -83,8 +83,7 @@ namespace cvx {
                                    vector<std::pair<Eigen::Vector2d, Eigen::Vector2d> > & projected_line_segments)
     {
         using LineType = std::pair<Eigen::Vector2d, Eigen::Vector2d>;
-        
-       // cv::Rect im_rect(0, 0, im_w, im_h);
+       
         Eigen::AlignedBox<double, 2> im_rect(Vector2d(0, 0), Vector2d(im_w, im_h));
         for (int i = 0; i<line_segments.size(); i++) {
             Eigen::Vector2d q1 = camera.project2d(line_segments[i].first);
@@ -197,7 +196,8 @@ bool trackEdgeImage(const cvx_pgl::perspective_camera& init_camera,
         vector<Eigen::Vector2d> tracked_edge_centers;
         vector<LineType> dummy_lines;
         assert(distance_map.type() == CV_32FC1);
-        trackLineSegmentCenter(projected_short_lines, dummy_lines,
+        trackLineSegmentCenter(projected_short_lines,
+                               dummy_lines,
                                tracked_edge_centers,
                                im_size, cv::noArray(),
                                distance_map, search_length, block_size, true);
@@ -315,22 +315,140 @@ bool trackEdgeImage(const cvx_pgl::perspective_camera& init_camera,
     
     double reproj_error = cvx_pgl::estimateCamera(model_pts, im_pts, model_lines, im_line_pts, init_camera, refined_camera);
     printf("reporjection error is %lf\n", reproj_error);
-   
-    
-    
-    
-    /*
-    // step 1.2 detect edge (center location) on the destination image
-
-    // step 2: RANSAC re-estimate camera pose
-    vector<Vector2d> im_line_pts;
-    for (int i = 0; i<tracked_edge_centers.size(); i++) {
-        im_line_pts.push_back(Eigen::Vector2d(tracked_edge_centers[i][0], tracked_edge_centers[i][1]));
-    }
-    
-    return
-     */
     return true;
 }
+    
+    
+    /*****************    edgeSearch spoort function    ***************/
+    // detect lsd lines in image and cut them to short line segment
+    // @brief mask if one pixel is on a line. 0 or 255
+    static void lsdLineMask(const cv::Mat & im, cv::Mat& mask)
+    {
+        assert(im.type() == CV_8UC1);
+        
+        // step 1: detect lines
+        // to doulbe image
+        Mat im_temp;
+        im.convertTo(im_temp, CV_64FC1);
+        if (!im_temp.isContinuous()) {
+            im_temp = im_temp.clone();
+        }
+        const int cols = im.cols;
+        const int rows = im.rows;
+        std::vector<LSD::LSDLineSegment2D> lsd_lines;
+        LSD::detectLines((double *) im_temp.data, cols, rows, lsd_lines);
+        
+        // step 2: draw lines in a mask image
+        mask = cv::Mat(im.rows, im.cols, CV_8UC1);
+        for (int i = 0; i<lsd_lines.size(); i++) {
+            int x1 = cvRound(lsd_lines[i].x1);
+            int y1 = cvRound(lsd_lines[i].y1);
+            int x2 = cvRound(lsd_lines[i].x2);
+            int y2 = cvRound(lsd_lines[i].y2);
+            int line_width = cvRound(lsd_lines[i].width_);
+            cv::line(mask, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar::all(255), line_width);
+        }
+    }
+    
+        
+    
+    bool edgeSearch(const cvx_pgl::perspective_camera& _init_camera,
+                    const vector<Vector2d>& _model_points,
+                    const vector<Vector2d>& _model_point_normal_direction,
+                    const cv::Mat& _image,
+                    cvx_pgl::perspective_camera& refined_camera)
+    {
+        // check input
+        assert(_model_points.size() > 1);
+        assert(_image.type() == CV_8UC1);
+        assert(_model_points.size() == _model_point_normal_direction.size());
+        
+        refined_camera = _init_camera;
+        const int im_w = _image.cols;
+        const int im_h = _image.rows;
+        cv::Size im_size(im_w, im_h);
+        const cv::Size sz(im_w, im_h);
+        const double search_length = 20;
+        const double inlier_threshold = 1.5;
+        
+        // support data structure
+        Mat bw = Mat(im_h, im_w, CV_8UC1, cv::Scalar(255));
+        
+        // step 1: detect edge in edge map and compute distance map
+        Mat grad_x, grad_y, grad_mag;
+        cvx::imgproc::gradient(_image, grad_x, grad_y, grad_mag);
+        assert(grad_mag.type() == CV_64FC1);
+        
+        Mat line_mask;
+        lsdLineMask(_image, line_mask);
+        assert(line_mask.type() == CV_8UC1);
+        
+        // step 2: projected points and its normal direction
+        // the search is with line detection and distance transform
+        vector<Eigen::Vector2d> observed_model_points;  // world coordinate
+        vector<Eigen::Vector2d> searched_points;        // image coordinate
+        Eigen::AlignedBox<double, 2> im_rect(Vector2d(0, 0), Vector2d(im_w, im_h));
+        const double angular_threahold = acos(20.0/180.0*M_PI);    // smaller than 20 degrees
+        for (int i = 0; i<_model_points.size(); i++) {
+            Vector2d p = _init_camera.project2d(_model_points[i]);
+            Vector2d p_dir = _init_camera.project2d(_model_point_normal_direction[i]);
+            p_dir = p_dir.normalized();     // projected point direction
+            
+            Eigen::Vector2d q1 = p + p_dir * search_length;  // two projected end points
+            Eigen::Vector2d q2 = p - p_dir * search_length;
+            
+            // three point must be inside the image
+            if (!im_rect.contains(p) || !im_rect.contains(q1) || !im_rect.contains(q2)) {
+                continue;
+            }
+            
+            // search the location, 1. with maximum gradient, 2. similar orentation
+            
+            // [q1 q2] a virtual line along the normal direction
+            cv::Point q1_img(cvRound(q1.x()), cvRound(q1.y()));
+            cv::Point q2_img(cvRound(q2.x()), cvRound(q2.y()));
+            cv::clipLine(sz, q1_img, q2_img);
+            cv::LineIterator it(bw, q1_img, q2_img, 8);
+            
+            double max_mag = -1.0;
+            cv::Point max_p(p.x(), p.y());
+            for(int ct = 0; ct < it.count; ct++, ++it)
+            {
+                cv::Point p = it.pos();  // center location of the patch
+                int r = p.y;
+                int c = p.x;
+                double mag = grad_mag.at<double>(r, c);
+                // on line segment and with large magnitude
+                if (line_mask.at<unsigned char>(r, c) == 255 && mag > max_mag) {
+                    
+                    double dx = grad_x.at<double>(r, c);
+                    double dy = grad_y.at<double>(r, c);
+                    Eigen::Vector2d grad_dir(dx, dy);
+                    grad_dir = grad_dir.normalized();
+                    
+                    // similar direction
+                    double angular_dif = std::abs(p_dir.dot(grad_dir));
+                    if (angular_dif > angular_threahold) {
+                        max_mag = mag;
+                        max_p = p;
+                    }
+                }
+            }
+            if (max_mag > 0) {
+                observed_model_points.push_back(_model_points[i]);
+                searched_points.push_back(Eigen::Vector2d(max_p.x, max_p.y));
+            }
+        }
+        assert(observed_model_points.size() == searched_points.size());
+        
+        if (observed_model_points.size() < 8) {
+            return false;
+        }
+        
+        // step 3: RANSAC to optimize camera pose
+        bool is_refined = cvx_pgl::refineCameraRANSAC(observed_model_points, searched_points,
+                                                      _init_camera, refined_camera);
+        return is_refined;
+    }
     
 }

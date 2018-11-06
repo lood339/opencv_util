@@ -204,6 +204,84 @@ namespace cvx_pgl {
     }
     
     
+    bool refineCameraRANSAC(const vector<Vector2d> & model_pts,
+                            const vector<Vector2d> & im_pts,
+                            const perspective_camera& init_camera,
+                            perspective_camera& refined_camera)
+    {
+        assert(model_pts.size() == im_pts.size());
+        assert(model_pts.size() >= 8);
+        
+        const int min_configuation_num = 7;
+        int num_iteration = 1024;
+        const double dist_threshold = 2.0;
+        const double early_stop_ratio = 0.8;
+        
+        vector<int> index;
+        for (int i = 0; i<model_pts.size(); i++) {
+            index.push_back(i);
+        }
+        
+        int max_inlier_num = 0;
+        while(num_iteration--) {
+            
+            // randomly select 7 pairs
+            std::random_shuffle(index.begin(), index.end());
+            vector<Vector2d> cur_wld_pts;
+            vector<Vector2d> cur_im_pts;
+            cvx_pgl::perspective_camera cur_camera;
+            for (int j = 0; j<min_configuation_num; j++) {
+                const int k = index[j];
+                cur_wld_pts.push_back(model_pts[k]);
+                cur_im_pts.push_back(im_pts[k]);
+            }
+            
+            // step 1: estimate hypothesis
+            vector<std::pair<Eigen::Vector2d, Eigen::Vector2d> > dummy_model_lines;
+            vector<Vector2d> dummy_im_line_pts;
+            double reproj_error = cvx_pgl::estimateCamera(cur_wld_pts, cur_im_pts,
+                                                          dummy_model_lines, dummy_im_line_pts,
+                                                          init_camera, cur_camera);
+            
+            // step 2: verify hypothesis using all points
+            vector<int> inlier_index;
+            for (int j = 0; j<model_pts.size(); j++) {
+                Eigen::Vector2d p = model_pts[j];
+                Eigen::Vector2d q = cur_camera.project2d(p);
+                
+                double dist = (q - im_pts[j]).norm();
+                if (dist < dist_threshold) {
+                    inlier_index.push_back(j);
+                }
+            }
+            // step 3: record the best one
+            if (inlier_index.size() > max_inlier_num
+                && inlier_index.size() > min_configuation_num) {
+                
+                max_inlier_num = (int)inlier_index.size();
+                // re-estimate camera
+                vector<Vector2d> cur_wld_pts;
+                vector<Vector2d> cur_im_pts;
+                cvx_pgl::perspective_camera cur_camera;
+                for (const int k: inlier_index) {
+                    cur_wld_pts.push_back(model_pts[k]);
+                    cur_im_pts.push_back(im_pts[k]);
+                }
+                reproj_error = cvx_pgl::estimateCamera(cur_wld_pts, cur_im_pts,
+                                                       dummy_model_lines, dummy_im_line_pts,
+                                                       init_camera, cur_camera);
+                refined_camera = cur_camera;
+                double inlier_ratio = 1.0*inlier_index.size()/model_pts.size();
+                printf("inlier ratio %f\n", inlier_ratio);
+                if (inlier_ratio > early_stop_ratio) {
+                    break;
+                }
+            }
+        }
+        
+        return max_inlier_num * 2 > model_pts.size(); // at least 50% is inlier
+    }
+    
     bool estimateCameraRANSAC(const vector<std::pair<Eigen::Vector2d, Eigen::Vector2d> > & model_lines,
                               const vector<Vector2d> & im_line_pts,
                               const perspective_camera& init_camera,
