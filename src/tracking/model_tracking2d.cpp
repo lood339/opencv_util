@@ -14,7 +14,10 @@
 #include "cvx_line.h"
 #include <iostream>
 #include "cvx_pgl_perspective_camera.h"
-//#include "mat_io.hpp"
+
+// for debug
+#include "mat_io.hpp"
+#include "cvx_draw.hpp"
 
 using std::cout;
 using std::endl;
@@ -339,7 +342,7 @@ bool trackEdgeImage(const cvx_pgl::perspective_camera& init_camera,
         LSD::detectLines((double *) im_temp.data, cols, rows, lsd_lines);
         
         // step 2: draw lines in a mask image
-        mask = cv::Mat(im.rows, im.cols, CV_8UC1);
+        mask = cv::Mat::zeros(im.rows, im.cols, CV_8UC1);
         for (int i = 0; i<lsd_lines.size(); i++) {
             int x1 = cvRound(lsd_lines[i].x1);
             int y1 = cvRound(lsd_lines[i].y1);
@@ -356,49 +359,69 @@ bool trackEdgeImage(const cvx_pgl::perspective_camera& init_camera,
                     const vector<Vector2d>& _model_points,
                     const vector<Vector2d>& _model_point_normal_direction,
                     const cv::Mat& _image,
+                    const double _search_distance,
                     cvx_pgl::perspective_camera& refined_camera)
     {
         // check input
         assert(_model_points.size() > 1);
-        assert(_image.type() == CV_8UC1);
+        assert(_image.type() == CV_8UC1 || _image.type() == CV_8UC3);
         assert(_model_points.size() == _model_point_normal_direction.size());
         
+        
+        Mat gray_image;
+        if (_image.channels() == 3) {
+            cvtColor( _image, gray_image, CV_BGR2GRAY );
+        }
+        else {
+            gray_image = _image;
+        }
+
         refined_camera = _init_camera;
         const int im_w = _image.cols;
         const int im_h = _image.rows;
         cv::Size im_size(im_w, im_h);
         const cv::Size sz(im_w, im_h);
-        const double search_length = 20;
-        const double inlier_threshold = 1.5;
+        const double search_length = _search_distance/2.0;
         
         // support data structure
         Mat bw = Mat(im_h, im_w, CV_8UC1, cv::Scalar(255));
         
         // step 1: detect edge in edge map and compute distance map
         Mat grad_x, grad_y, grad_mag;
-        cvx::imgproc::gradient(_image, grad_x, grad_y, grad_mag);
+        cvx::imgproc::gradient(gray_image, grad_x, grad_y, grad_mag);
         assert(grad_mag.type() == CV_64FC1);
+        assert(grad_x.type() == CV_64FC1);
+        assert(grad_y.type() == CV_64FC1);
         
         Mat line_mask;
-        lsdLineMask(_image, line_mask);
+        lsdLineMask(gray_image, line_mask);
         assert(line_mask.type() == CV_8UC1);
+        
+        //cv::imshow("line mask", line_mask);
+        //cv::waitKey();
         
         // step 2: projected points and its normal direction
         // the search is with line detection and distance transform
         vector<Eigen::Vector2d> observed_model_points;  // world coordinate
         vector<Eigen::Vector2d> searched_points;        // image coordinate
         Eigen::AlignedBox<double, 2> im_rect(Vector2d(0, 0), Vector2d(im_w, im_h));
-        const double angular_threahold = acos(20.0/180.0*M_PI);    // smaller than 20 degrees
+        const double angular_threahold = cos(45.0/180.0*M_PI);    // smaller than 20 degrees
         for (int i = 0; i<_model_points.size(); i++) {
-            Vector2d p = _init_camera.project2d(_model_points[i]);
-            Vector2d p_dir = _init_camera.project2d(_model_point_normal_direction[i]);
-            p_dir = p_dir.normalized();     // projected point direction
+            Vector2d p = _model_points[i];
+            Vector2d n = _model_point_normal_direction[i];
+            Vector2d p1 = p + search_length * _model_point_normal_direction[i];
+            Vector2d p2 = p - search_length * _model_point_normal_direction[i];
             
-            Eigen::Vector2d q1 = p + p_dir * search_length;  // two projected end points
-            Eigen::Vector2d q2 = p - p_dir * search_length;
+            Eigen::Vector2d q = _init_camera.project2d(p);
+            Eigen::Vector2d q1 = _init_camera.project2d(p1);
+            Eigen::Vector2d q2 = _init_camera.project2d(p2);
+            Vector2d img_dir = q1 - q2;
+            img_dir = img_dir.normalized();     // projected point direction           
+        
+          
             
             // three point must be inside the image
-            if (!im_rect.contains(p) || !im_rect.contains(q1) || !im_rect.contains(q2)) {
+            if (!im_rect.contains(q) || !im_rect.contains(q1) || !im_rect.contains(q2)) {
                 continue;
             }
             
@@ -427,7 +450,7 @@ bool trackEdgeImage(const cvx_pgl::perspective_camera& init_camera,
                     grad_dir = grad_dir.normalized();
                     
                     // similar direction
-                    double angular_dif = std::abs(p_dir.dot(grad_dir));
+                    double angular_dif = std::abs(img_dir.dot(grad_dir));
                     if (angular_dif > angular_threahold) {
                         max_mag = mag;
                         max_p = p;
@@ -439,6 +462,23 @@ bool trackEdgeImage(const cvx_pgl::perspective_camera& init_camera,
                 searched_points.push_back(Eigen::Vector2d(max_p.x, max_p.y));
             }
         }
+        
+        if (1)
+        {
+            cv::Mat debug_image;
+            _image.copyTo(debug_image);
+            // debug
+            vector<cv::Point2d> projected_pts;
+            for (int i = 0; i<searched_points.size(); i++) {
+                Eigen::Vector2d p = searched_points[i];
+                projected_pts.push_back(cv::Point2d(p.x(), p.y()));
+            }
+            
+            CvxDraw::draw_cross_template(debug_image, projected_pts, CvxDraw::green());
+            cv::imshow("searched points", debug_image);
+            cv::waitKey();
+        }
+        
         assert(observed_model_points.size() == searched_points.size());
         
         if (observed_model_points.size() < 8) {

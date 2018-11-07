@@ -41,7 +41,8 @@ namespace cvx {
     // ACCV 2004
     // init_camera: initial camera pose
     // model_points: points in the 2D model, unit meter
-    // image: CV_8UC1, input gray image
+    // image: CV_8UC1, input image
+    // search_distance: distance in the normal direction, unit meter, 1.0. model coordinate
     // refined_camera: refined camera
     // return: true, camera is refined; false, the refined camera is the input camera
     // use RANSAC inside
@@ -49,6 +50,7 @@ namespace cvx {
                     const vector<Vector2d>& model_points,
                     const vector<Vector2d>& model_point_normal_direction,
                     const cv::Mat& image,
+                    const double search_distance,
                     cvx_pgl::perspective_camera& refined_camera);
     
 }

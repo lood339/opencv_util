@@ -192,7 +192,7 @@ namespace cvx_pgl {
         {
             double reproj_error;
             opt_functor.getResult(x, refined_camera, reproj_error);
-            std::cout<<"initial reprojection error is "<<reproj_error<<std::endl;
+            //std::cout<<"initial reprojection error is "<<reproj_error<<std::endl;
         }
         Eigen::LevenbergMarquardtSpace::Status status = lm.minimize(x);
         //std::cout << "status: " << status << std::endl;
@@ -223,6 +223,7 @@ namespace cvx_pgl {
         }
         
         int max_inlier_num = 0;
+        bool is_optimized = false;
         while(num_iteration--) {
             
             // randomly select 7 pairs
@@ -257,6 +258,7 @@ namespace cvx_pgl {
             // step 3: record the best one
             if (inlier_index.size() > max_inlier_num
                 && inlier_index.size() > min_configuation_num) {
+                is_optimized = true;
                 
                 max_inlier_num = (int)inlier_index.size();
                 // re-estimate camera
@@ -272,14 +274,14 @@ namespace cvx_pgl {
                                                        init_camera, cur_camera);
                 refined_camera = cur_camera;
                 double inlier_ratio = 1.0*inlier_index.size()/model_pts.size();
-                printf("inlier ratio %f\n", inlier_ratio);
+                printf("inlier ratio %f, matching number %lu.\n", inlier_ratio, inlier_index.size());
                 if (inlier_ratio > early_stop_ratio) {
                     break;
                 }
             }
         }
         
-        return max_inlier_num * 2 > model_pts.size(); // at least 50% is inlier
+        return is_optimized;
     }
     
     bool estimateCameraRANSAC(const vector<std::pair<Eigen::Vector2d, Eigen::Vector2d> > & model_lines,
@@ -301,6 +303,7 @@ namespace cvx_pgl {
         vector<Vector2d> dummy_im_pts;
         int max_inlier_num = 0;
         
+        bool is_optimized = false;
         while(num_iteration--) {
             
             // randomly select 7 pairs
@@ -340,6 +343,7 @@ namespace cvx_pgl {
             }
             // record the best one
             if (inlier_index.size() > max_inlier_num && inlier_index.size() > min_configuation_num) {
+                is_optimized = true;
                 max_inlier_num = (int)inlier_index.size();
                 
                 // re-estimate camera
