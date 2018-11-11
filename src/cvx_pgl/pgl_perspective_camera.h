@@ -45,6 +45,7 @@ namespace cvx_pgl {
         
         // new added
         Eigen::Vector2d project2d(const Eigen::Vector2d &p) const;
+        Eigen::Vector2d project3d(const Eigen::Vector3d &p) const;
         
         
     protected:

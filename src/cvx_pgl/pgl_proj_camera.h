@@ -19,6 +19,8 @@ namespace cvx_pgl {
     using cvx_gl::homg_point_2d;
     using cvx_gl::homg_point_3d;
     using cvx_pgl::Matrix34d;
+    using Eigen::Vector3d;
+    using Eigen::Vector2d;
     
     class proj_camera {
         
@@ -31,7 +33,7 @@ namespace cvx_pgl {
         
         //: Projection from base class
         virtual void project(const double x, const double y, const double z, double& u, double& v) const;
-
+        
         Eigen::JacobiSVD<Eigen::MatrixXd>* svd() const;
         
         const Matrix34d& get_matrix() const{ return P_; }
