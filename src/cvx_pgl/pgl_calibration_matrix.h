@@ -15,7 +15,7 @@
 using Eigen::Vector2d;
 using Eigen::Matrix3d;
 
-namespace cvx_pgl {
+namespace cvx {
     class calibration_matrix {
         
     public:

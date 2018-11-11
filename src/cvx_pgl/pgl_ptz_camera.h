@@ -15,7 +15,7 @@
 #include "pgl_perspective_camera.h"
 
 // camera model from "Mimicking Human Camera Operators" from WACV 2015
-namespace cvx_pgl {
+namespace cvx {
     using Eigen::Vector2d;
     using Eigen::Vector3d;
     using std::vector;

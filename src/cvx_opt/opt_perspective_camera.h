@@ -17,7 +17,9 @@
 using Eigen::Vector2d;
 using std::vector;
 
-namespace cvx_pgl {
+
+
+namespace cvx {
     // @brief refine camera using point-to-point and point-on-line correspondences
     // model_pts: points from 2D model
     // im_pts: points from destination image

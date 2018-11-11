@@ -13,13 +13,13 @@
 #include <unsupported/Eigen/NumericalDiff>
 
 
-using cvx_gl::rotation_3d;
-using cvx_pgl::calibration_matrix;
+using cvx::rotation_3d;
+using cvx::calibration_matrix;
 using std::cout;
 using std::endl;
 
 
-namespace cvx_pgl  {
+namespace cvx  {
     bool ptz_camera::set_camera(const perspective_camera& camera,
                                 const MatrixXd & wld_pts,
                                 const MatrixXd & img_pts)
@@ -70,9 +70,9 @@ namespace cvx_pgl  {
     {
         ptz_ = ptz;
         
-        Eigen::Matrix3d R = matrixFromPanYTiltX(pan(), tilt()) * cvx_gl::rotation_3d(base_rotation_).as_matrix();
-        K_ = cvx_pgl::calibration_matrix(focal_length(), pp_);
-        R_ = cvx_gl::rotation_3d(R);
+        Eigen::Matrix3d R = matrixFromPanYTiltX(pan(), tilt()) * cvx::rotation_3d(base_rotation_).as_matrix();
+        K_ = cvx::calibration_matrix(focal_length(), pp_);
+        R_ = cvx::rotation_3d(R);
         recompute_matrix();
         return true;
     }

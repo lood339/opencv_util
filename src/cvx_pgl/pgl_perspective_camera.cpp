@@ -9,7 +9,7 @@
 #include "pgl_perspective_camera.h"
 #include <Eigen/Geometry>
 
-namespace cvx_pgl {
+namespace cvx {
     perspective_camera::perspective_camera()
     {
         R_.set_identity();
@@ -53,13 +53,13 @@ namespace cvx_pgl {
     
     void perspective_camera::set_rotation(const Eigen::Vector3d& rvector)
     {
-        R_ = rotation3d(rvector);
+        R_ = rotation_3d(rvector);
         recompute_matrix();
     }
     
     void perspective_camera::set_rotation( const Eigen::Matrix3d& R )
     {
-        R_ = rotation3d(R);
+        R_ = rotation_3d(R);
         recompute_matrix();
     }
     

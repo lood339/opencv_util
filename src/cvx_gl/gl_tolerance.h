@@ -4,7 +4,7 @@
 #include <cmath.h>
 #include <limits>
 
-namespace cvx_gl {
+namespace cvx {
     template <typename T>
     class tolerance
     {

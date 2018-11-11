@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <Eigen/Dense>
 
-namespace cvx_gl {
+namespace cvx {
     using Eigen::Vector3d;
     class ray_3d {
         Eigen::Vector3d p0_;  // The ray origin

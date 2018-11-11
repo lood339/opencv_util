@@ -6,7 +6,7 @@
 //  Copyright (c) 2018 Nowhere Planet. All rights reserved.
 //
 
-#include "ptz_camera_util.h"
+#include "opt_ptz_camera.h"
 
 // Eigen
 #include <Eigen/Geometry>
@@ -16,7 +16,7 @@
 #include "pgl_ptz_camera.h"
 
 
-namespace cvx_pgl {
+namespace cvx {
     namespace  {
         // @brief
         struct CommomCameraCenterAndRotationFunctor
@@ -61,7 +61,7 @@ namespace cvx_pgl {
                 Eigen::Vector3d cc(x[0], x[1], x[2]);
                 Eigen::Vector3d rod(x[3], x[4], x[5]);
                 
-                cvx_pgl::ptz_camera camera(pp_, cc, rod);
+                cvx::ptz_camera camera(pp_, cc, rod);
                 int idx = 0;
                 for(int i = 0; i<wld_pts_.size(); i++) {
                     double pan  = x[6 + 3 * i];
@@ -94,7 +94,7 @@ namespace cvx_pgl {
                 cc = Eigen::Vector3d(x[0], x[1], x[2]);
                 rod = Eigen::Vector3d(x[3], x[4], x[5]);
                 
-                cvx_pgl::ptz_camera camera(pp_, cc, rod);
+                cvx::ptz_camera camera(pp_, cc, rod);
                 
                 for(int i = 0; i<wld_pts_.size(); i++) {
                     double pan  = x[6 + 3 * i];
@@ -142,7 +142,7 @@ namespace cvx_pgl {
             }
             assert(wld_pts[i].size() == img_pts[i].size());
         }
-        
+       
         const double error_threshold = 3.0; // pixel
         using ResidualFunctor = CommomCameraCenterAndRotationFunctor;
         Vector2d pp = init_cameras[0].get_calibration().principal_point();
@@ -150,7 +150,9 @@ namespace cvx_pgl {
         // step 2: prepare data
         Eigen::VectorXd x(6 + 3 * (int)init_cameras.size()); // 6 + N, pan, tilt, focal length
         
-        Matrix3d Rs_inv = init_common_rotation.inverse();
+        
+        Matrix3d Rs_inv = cvx::rotation_3d(init_common_rotation).as_matrix().inverse();
+        
         for (int i = 0; i<init_cameras.size(); i++) {
             perspective_camera cur_camera = init_cameras[i];
             x[6 + 3 * i + 2] = cur_camera.get_calibration().focal_length();
@@ -194,6 +196,7 @@ namespace cvx_pgl {
                               estimated_common_rotation,
                               estimated_cameras,
                               errors);
+        // check reprojection error
         double max_reprojection_error = errors.maxCoeff();
         if (max_reprojection_error > error_threshold) {
             std::cout<<"Warning, large reprojection error: "<<errors<<std::endl;

@@ -1,12 +1,12 @@
 //
-//  cvx_pgl_perspective_camera.cpp
+//  cvx_perspective_camera.cpp
 //  CalibMeMatching
 //
 //  Created by jimmy on 2018-02-05.
 //  Copyright (c) 2018 Nowhere Planet. All rights reserved.
 //
 
-#include "cvx_pgl_perspective_camera.h"
+#include "opt_perspective_camera.h"
 #include <iostream>
 
 // Eigen
@@ -15,7 +15,8 @@
 #include <unsupported/Eigen/NumericalDiff>
 
 
-namespace cvx_pgl {
+
+namespace cvx {
     
     namespace {
     struct PointLineCameraFunctor
@@ -66,7 +67,7 @@ namespace cvx_pgl {
             Eigen::Vector3d cc(x[4], x[5], x[6]);
             
             calibration_matrix K(fl, pp_);
-            cvx_pgl::perspective_camera camera;
+            cvx::perspective_camera camera;
             camera.set_calibration(K);
             camera.set_rotation(rod);
             camera.set_camera_center(cc);
@@ -105,7 +106,7 @@ namespace cvx_pgl {
         int values() const { return m_values; }   // "values" is the number of fx and
         
         void getResult(const Eigen::VectorXd &x,
-                       cvx_pgl::perspective_camera & camera,
+                       cvx::perspective_camera & camera,
                        double & reproj_error) const
         {
             assert(x.size() == 7);
@@ -230,7 +231,7 @@ namespace cvx_pgl {
             std::random_shuffle(index.begin(), index.end());
             vector<Vector2d> cur_wld_pts;
             vector<Vector2d> cur_im_pts;
-            cvx_pgl::perspective_camera cur_camera;
+            cvx::perspective_camera cur_camera;
             for (int j = 0; j<min_configuation_num; j++) {
                 const int k = index[j];
                 cur_wld_pts.push_back(model_pts[k]);
@@ -240,7 +241,7 @@ namespace cvx_pgl {
             // step 1: estimate hypothesis
             vector<std::pair<Eigen::Vector2d, Eigen::Vector2d> > dummy_model_lines;
             vector<Vector2d> dummy_im_line_pts;
-            double reproj_error = cvx_pgl::estimateCamera(cur_wld_pts, cur_im_pts,
+            double reproj_error = cvx::estimateCamera(cur_wld_pts, cur_im_pts,
                                                           dummy_model_lines, dummy_im_line_pts,
                                                           init_camera, cur_camera);
             
@@ -264,12 +265,12 @@ namespace cvx_pgl {
                 // re-estimate camera
                 vector<Vector2d> cur_wld_pts;
                 vector<Vector2d> cur_im_pts;
-                cvx_pgl::perspective_camera cur_camera;
+                cvx::perspective_camera cur_camera;
                 for (const int k: inlier_index) {
                     cur_wld_pts.push_back(model_pts[k]);
                     cur_im_pts.push_back(im_pts[k]);
                 }
-                reproj_error = cvx_pgl::estimateCamera(cur_wld_pts, cur_im_pts,
+                reproj_error = cvx::estimateCamera(cur_wld_pts, cur_im_pts,
                                                        dummy_model_lines, dummy_im_line_pts,
                                                        init_camera, cur_camera);
                 refined_camera = cur_camera;
@@ -310,14 +311,14 @@ namespace cvx_pgl {
             std::random_shuffle(index.begin(), index.end());
             vector<std::pair<Eigen::Vector2d, Eigen::Vector2d> > cur_lines;
             vector<Vector2d> cur_pts;
-            cvx_pgl::perspective_camera cur_camera;
+            cvx::perspective_camera cur_camera;
             for (int j = 0; j<min_configuation_num; j++) {
                 cur_lines.push_back(model_lines[index[j]]);
                 cur_pts.push_back(im_line_pts[index[j]]);
             }
             
             // estimate hypothesis
-            double reproj_error = cvx_pgl::estimateCamera(dummy_model_pts, dummy_im_pts,
+            double reproj_error = cvx::estimateCamera(dummy_model_pts, dummy_im_pts,
                                                           cur_lines, cur_pts,
                                                           init_camera, cur_camera);
             //printf("reprojection error %f\n", reproj_error);
@@ -354,7 +355,7 @@ namespace cvx_pgl {
                     opt_pts.push_back(im_line_pts[inlier_index[j]]);
                 }
                 
-                cvx_pgl::estimateCamera(dummy_model_pts, dummy_im_pts,
+                cvx::estimateCamera(dummy_model_pts, dummy_im_pts,
                                         opt_lines, opt_pts,
                                         init_camera, cur_camera);
                 refined_camera = cur_camera;

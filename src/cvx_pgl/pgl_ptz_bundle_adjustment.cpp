@@ -18,7 +18,7 @@ using Eigen::Vector3d;
 using std::cout;
 using std::endl;
 
-namespace cvx_pgl {
+namespace cvx {
     namespace {
         struct PTZFunctor {
             typedef double Scalar;

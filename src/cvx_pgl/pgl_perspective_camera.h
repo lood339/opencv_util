@@ -17,12 +17,10 @@
 #include "gl_rotation_3d.h"
 
 
-namespace cvx_pgl {
+namespace cvx {
    
     class perspective_camera : public proj_camera
     {
-        using rotation3d = cvx_gl::rotation_3d;
-        using calibration_matrix = cvx_pgl::calibration_matrix;
         
     public:
         //: Default constructor
@@ -40,7 +38,7 @@ namespace cvx_pgl {
         
         const calibration_matrix & get_calibration() const{ return K_; }
         const Eigen::Vector3d& get_camera_center() const { return camera_center_; }
-        const rotation3d& get_rotation() const{ return R_; }
+        const rotation_3d& get_rotation() const{ return R_; }
         
         
         // new added
@@ -54,7 +52,7 @@ namespace cvx_pgl {
         
         calibration_matrix K_;
         Eigen::Vector3d camera_center_;
-        rotation3d R_;
+        rotation_3d R_;
     };
     
 } // namespace

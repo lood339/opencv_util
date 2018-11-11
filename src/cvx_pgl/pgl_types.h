@@ -11,7 +11,7 @@
 
 #include <Eigen/Dense>
 
-namespace cvx_pgl {
+namespace cvx {
     
     typedef Eigen::Matrix<double, 3, 4> Matrix34d;
     typedef Eigen::Matrix<float, 3, 4>  Matrix34f;

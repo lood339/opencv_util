@@ -16,7 +16,7 @@
 using Eigen::Vector2d;
 using std::vector;
 
-namespace cvx_gl {
+namespace cvx {
     // @brief refine homography using point-to-point and point-on-line correspondences
     // src_pts: points from source image
     // dst_pts: points from destination image

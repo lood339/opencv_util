@@ -4,7 +4,7 @@
 
 #include <cmath>
 
-namespace cvx_gl {
+namespace cvx {
     //: Represents a homogeneous 2D point
     class homg_point_2d
     {

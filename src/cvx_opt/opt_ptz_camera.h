@@ -19,9 +19,10 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
 using std::vector;
-using cvx_gl::rotation_3d;
+using cvx::rotation_3d;
+using cvx::perspective_camera;
 
-namespace cvx_pgl {
+namespace cvx {
     //@ brief estimate camera center and tripod rotation for a set of PTZ cameras.
     //  each camera provide 2D-3D correspondences,
     // init_common_rotation: rodrigues angle
@@ -31,10 +32,7 @@ namespace cvx_pgl {
                                                const Vector3d & init_common_rotation,
                                                Vector3d & estimated_camera_center,
                                                Vector3d & estimated_common_rotation,
-                                               vector<perspective_camera > & estimated_cameras);
-    
-    
-    
+                                               vector<perspective_camera > & estimated_cameras);    
     
 }
 

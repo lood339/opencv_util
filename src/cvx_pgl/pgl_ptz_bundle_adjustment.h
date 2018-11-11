@@ -17,7 +17,7 @@
 // ptz bundle adjustment
 using std::vector;
 
-namespace cvx_pgl {
+namespace cvx {
     class pgl_ptz_ba {
     public:
         pgl_ptz_ba()

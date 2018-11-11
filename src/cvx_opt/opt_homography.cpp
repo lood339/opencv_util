@@ -6,7 +6,7 @@
 //  Copyright (c) 2017 Nowhere Planet. All rights reserved.
 //
 
-#include "cvx_gl_homography.h"
+#include "opt_homography.h"
 #include <iostream>
 
 // Eigen
@@ -17,7 +17,7 @@
 using std::cout;
 using std::endl;
 
-namespace cvx_gl {
+namespace cvx {
     
     namespace  {
         // @brief estimate homography from single-image correspondences

@@ -8,7 +8,7 @@
 
 #include "pgl_calibration_matrix.h"
 
-namespace cvx_pgl {
+namespace cvx {
     
     calibration_matrix::calibration_matrix() :
     focal_length_( 1.0 ),

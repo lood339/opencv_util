@@ -16,7 +16,7 @@ using Eigen::Quaternion;
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
 
-namespace cvx_gl {
+namespace cvx {
     // different representative of rotation matrix
     
     class rotation_3d {

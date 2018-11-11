@@ -15,10 +15,8 @@
 #include "gl_homg_point_2d.h"
 #include "pgl_types.h"
 
-namespace cvx_pgl {
-    using cvx_gl::homg_point_2d;
-    using cvx_gl::homg_point_3d;
-    using cvx_pgl::Matrix34d;
+namespace cvx {
+    
     using Eigen::Vector3d;
     using Eigen::Vector2d;
     

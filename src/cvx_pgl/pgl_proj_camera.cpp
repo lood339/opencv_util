@@ -8,7 +8,7 @@
 
 #include "pgl_proj_camera.h"
 
-namespace cvx_pgl {
+namespace cvx {
     
     proj_camera::proj_camera()
     {
