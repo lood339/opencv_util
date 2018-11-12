@@ -58,6 +58,8 @@ namespace cvx {
         Vector3d ptz(void) { return ptz_; }
         
         
+        using proj_camera::project;
+        
         // project pan tilt ray to (x, y)
         Eigen::Vector2d project(double pan, double tilt) const;
         
