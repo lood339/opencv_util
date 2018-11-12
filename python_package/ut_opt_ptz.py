@@ -5,7 +5,7 @@ import numpy as np
 import ctypes
 from ctypes import cdll
 from ctypes import c_int
-lib = cdll.LoadLibrary('./build/libcvx_opt_python.dylib')
+lib = cdll.LoadLibrary('../build/libcvx_opt_python.dylib')
 
 
 #param_name = c_char_p("/Users/jimmy/Desktop/learn_program/mt_dtc/dtc_tree_param.txt".encode('utf-8'))
@@ -51,11 +51,11 @@ rod = np.zeros((3, 1))
 cv.Rodrigues(init_commont_rotation, rod)
 print(rod)
 
-opt_cameras = np.zeros((N, 3))
+opt_cameras = np.zeros((N, 9))
 common_center = np.zeros((3, 1))
 common_rotation = np.zeros((3, 1))
 
-"""
+
 lib.estimateCommomCameraCenterAndRotation(ctypes.c_void_p(model_pts.ctypes.data),
                                           c_int(rows),
                                           c_int(cols),
@@ -67,8 +67,9 @@ lib.estimateCommomCameraCenterAndRotation(ctypes.c_void_p(model_pts.ctypes.data)
                                           ctypes.c_void_p(common_center.ctypes.data),
                                           ctypes.c_void_p(common_rotation.ctypes.data))
 
-
-"""
+print(opt_cameras)
+print(common_center)
+print(common_rotation)
 """
 lib.dtc_train(ctypes.c_void_p(X_train.ctypes.data),
               ctypes.c_void_p(Y_train.ctypes.data),

@@ -9,8 +9,20 @@
 #ifndef EstimatePTZTripod_cvx_opt_python_h
 #define EstimatePTZTripod_cvx_opt_python_h
 
+// Interface for python
 
 extern "C" {
+    //@ estimate camera center and tripod rotation for PTZ cameras
+    //model_pts: N * 3, 3d world coordinate
+    //rows: N
+    //cols: 3
+    //input_init_cameras: M * 9, M is the number of cameras
+    //camera_num: M
+    // camera_param_len: 9
+    // input_init_common_rotation: 3 x 1 , rodrigues angle
+    // opt_cameras: M * 9, optimized PTZ camera
+    // commom_center: camera center 3 * 1
+    // commom_rotation: camera tripod rotation 3 * 1
     void estimateCommomCameraCenterAndRotation(const double* model_pts,
                                                const int rows,
                                                const int cols,

@@ -53,11 +53,6 @@ set(SOURCE_CVX_OPT
 	./src/cvx_opt/opt_perspective_camera.cpp 
 	./src/cvx_opt/opt_ptz_camera.cpp)
 
-
-
-# .cpp in dt_util
-#set(SOURCE_CODE_DT_UTIL ./src/dt_util/dt_random.cpp ./src/dt_util/dt_param_parser ./src/dt_util/dt_util.cpp ./src/dt_util/vnl_random.cxx)
-
 #set(SOURCE_CODE ${SOURCE_CODE1} ${SOURCE_CODE_DT_UTIL})
 
 # add the executable
@@ -66,6 +61,15 @@ set(SOURCE_CVX_OPT
 
 # add library
 add_library(cvx SHARED ${SOURCE_CVX_GL} ${SOURCE_CVX_PGL} ${SOURCE_CVX_OPT})
+
+
+# for python interface
+include_directories (./python_package)
+set(SOURCE_CVX_OPT_PYTHON ./python_package/cvx_opt_python.cpp)
+add_library(cvx_opt_python SHARED ${SOURCE_CVX_GL} 
+		${SOURCE_CVX_PGL} 
+		${SOURCE_CVX_OPT}
+		${SOURCE_CVX_OPT_PYTHON} )
 
 
 
