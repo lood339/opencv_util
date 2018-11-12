@@ -32,7 +32,7 @@ namespace cvx {
         // @brief fl = 2000 is an arbitrary number
         ptz_camera(const Vector2d& pp, const Vector3d& cc,
                    const Vector3d& base_rot, double pan = 0, double tilt = 0, double fl = 2000):pp_(pp),
-        cc_(cc), base_rotation_(base_rot), ptz_(pan, tilt, fl){}
+        cc_(cc), base_rotation_(base_rot), ptz_(pan, tilt, fl){camera_center_ = cc_;}
         
         
         // camera: has same camera center and base rotation

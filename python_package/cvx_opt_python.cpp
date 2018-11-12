@@ -8,6 +8,7 @@
 
 #if 1
 
+#include "cvx_opt_python.h"
 
 #include "opt_ptz_camera.h"
 #include <iostream>
@@ -17,15 +18,6 @@ using Eigen::MatrixXd;
 using cvx::perspective_camera;
 using cvx::calibration_matrix;
 
-/*
- bool estimateCommomCameraCenterAndRotation(const vector<vector<Vector3d>> & wld_pts,
- const vector<vector<Vector2d>> & img_pts,
- const vector<perspective_camera> & init_cameras,
- const Vector3d & init_common_rotation,
- Vector3d & estimated_camera_center,
- Vector3d & estimated_common_rotation,
- vector<perspective_camera > & estimated_cameras);
- */
 extern "C" {
     void estimateCommomCameraCenterAndRotation(const double* model_pts,
                                                const int rows,
@@ -34,9 +26,9 @@ extern "C" {
                                                const int camera_num,
                                                const int camera_param_len,
                                                const double* input_init_common_rotation,
-                                               double* opt_cameras,
-                                               double* commom_center,
-                                               double* commom_rotation)
+                                               double* output_cameras,
+                                               double* output_commom_center,
+                                               double* output_commom_rotation)
     
     
     {
@@ -70,19 +62,19 @@ extern "C" {
             camera.set_rotation(rod);
             init_cameras.push_back(camera);
         }
-        
+
         // @todo how to automatically get this rotation?
         Eigen::Vector3d init_rod(input_init_common_rotation[0],
                                  input_init_common_rotation[1],
                                  input_init_common_rotation[2]);
                                  
-        
+
         // step 2: optimize PTZ parameters
         const int im_w = init_cameras[0].get_calibration().principal_point().x() * 2;
         const int im_h = init_cameras[0].get_calibration().principal_point().y() * 2;
         assert(im_w > 0 && im_h > 0);
-        Eigen::AlignedBox<double, 2> im_size(im_w, im_h);
-        
+
+        Eigen::AlignedBox<double, 2> im_size(Vector2d(0, 0), Vector2d(im_w, im_h));
         vector<vector<Vector3d>> wld_pts;
         vector<vector<Vector2d>> img_pts;
         for(int i = 0; i<init_cameras.size(); i++) {
@@ -93,19 +85,19 @@ extern "C" {
                 Eigen::Vector2d q = init_cameras[i].project3d(p);
                 if (im_size.contains(q)) { // inside image
                     cur_wld_pts.push_back(p);
-                    cur_img_pts.push_back(q);
+                    cur_img_pts.push_back(q);                    
                 }
+                //std::cout<<q.transpose()<<std::endl;
             }
+            //std::cout<<std::endl;
             assert(cur_wld_pts.size() >= 2);
             
             wld_pts.push_back(cur_wld_pts);
             img_pts.push_back(cur_img_pts);
         }
-        
         Vector3d estimated_camera_center;
         Vector3d estimated_common_rotation;
         vector<perspective_camera > estimated_cameras;
-        
         bool is_estimated = cvx::estimateCommomCameraCenterAndRotation(wld_pts,
                                                    img_pts,
                                                    init_cameras,
@@ -113,21 +105,40 @@ extern "C" {
                                                    estimated_camera_center,
                                                    estimated_common_rotation,
                                                    estimated_cameras);
+         //printf("5");
+
         if (!is_estimated) {
-            printf("Warning: estimate PTZ camera center and tripod rotation failed!");
-            return;
+            printf("Warning: estimate PTZ camera center and tripod rotation failed!\n");
         }
         
         // step 3: output
+        for (int i = 0; i<camera_num; i++) {
+            cvx::perspective_camera camera = estimated_cameras[i];
+            output_cameras[i * 9 + 0] = camera.get_calibration().principal_point().x();
+            output_cameras[i * 9 + 1] = camera.get_calibration().principal_point().y();
+            output_cameras[i * 9 + 2] = camera.get_calibration().focal_length();
+            
+            output_cameras[i * 9 + 3] = camera.get_rotation().as_rodrigues().x();
+            output_cameras[i * 9 + 4] = camera.get_rotation().as_rodrigues().x();
+            output_cameras[i * 9 + 5] = camera.get_rotation().as_rodrigues().x();
+            
+            output_cameras[i * 9 + 6] = estimated_camera_center.x();
+            output_cameras[i * 9 + 7] = estimated_camera_center.y();
+            output_cameras[i * 9 + 8] = estimated_camera_center.z();
+        }
         
-        /*
-        double* opt_cameras,
-        double* commom_center,
-        double* commom_rotation
-         */
-       
+        output_commom_center[0] = estimated_camera_center.x();
+        output_commom_center[1] = estimated_camera_center.y();
+        output_commom_center[2] = estimated_camera_center.z();
+        
+        output_commom_rotation[0] = estimated_common_rotation.x();
+        output_commom_rotation[1] = estimated_common_rotation.y();
+        output_commom_rotation[2] = estimated_common_rotation.z();
     }
 }
+
+
+
 
 #endif
 

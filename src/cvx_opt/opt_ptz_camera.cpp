@@ -78,7 +78,7 @@ namespace cvx {
                         fx[idx++] = p.x() - q.x();
                         fx[idx++] = p.y() - q.y();
                     }
-                }
+                }                
                 return 0;
             }
             
@@ -94,12 +94,13 @@ namespace cvx {
                 cc = Eigen::Vector3d(x[0], x[1], x[2]);
                 rod = Eigen::Vector3d(x[3], x[4], x[5]);
                 
-                cvx::ptz_camera camera(pp_, cc, rod);
                 
+                cvx::ptz_camera camera(pp_, cc, rod);
                 for(int i = 0; i<wld_pts_.size(); i++) {
-                    double pan  = x[6 + 3 * i];
+                    double pan  = x[6 + 3 * i + 0];
                     double tilt = x[6 + 3 * i + 1];
                     double fl   = x[6 + 3 * i + 2];
+                    
                     
                     Vector3d ptz(pan, tilt, fl);
                     camera.set_ptz(ptz);
@@ -112,11 +113,14 @@ namespace cvx {
                         double dx = p.x() - q.x();
                         double dy = p.y() - q.y();
                         error += sqrt(dx * dx + dy * dy);
+                        //printf("dx dy: %f %f\n", dx, dy);
                     }
+                    //printf("\n");
                     error /= wld_pts_[i].size();
                     reprojection_errors[i] = error;
+                    result.push_back(camera);
                 }
-                result.push_back(camera);
+                
             }
         };
     }
@@ -148,14 +152,14 @@ namespace cvx {
         Vector2d pp = init_cameras[0].get_calibration().principal_point();
         
         // step 2: prepare data
-        Eigen::VectorXd x(6 + 3 * (int)init_cameras.size()); // 6 + N, pan, tilt, focal length
-        
+        Eigen::VectorXd x(6 + 3 * (int)init_cameras.size()); // 6 + 3 * N, pan, tilt, focal length
+        x.setZero();
         
         Matrix3d Rs_inv = cvx::rotation_3d(init_common_rotation).as_matrix().inverse();
         
         for (int i = 0; i<init_cameras.size(); i++) {
             perspective_camera cur_camera = init_cameras[i];
-            x[6 + 3 * i + 2] = cur_camera.get_calibration().focal_length();
+            double fl = cur_camera.get_calibration().focal_length();
             
             // R_pan_tilt * Rs = R--> R_pt = R * inv(Rs)
             Eigen::Matrix3d R_pan_tilt = cur_camera.get_rotation().as_matrix() * Rs_inv;
@@ -167,6 +171,8 @@ namespace cvx {
             double tilt = atan2(sin_tilt, cos_tilt) * 180.0 /M_PI;
             x[6 + 3 * i + 0] = pan;
             x[6 + 3 * i + 1] = tilt;
+            x[6 + 3 * i + 2] = fl;            
+            //printf("pan, tilt, focal length: %f %f %f\n", pan, tilt, fl);
             
             x[0] += cur_camera.get_camera_center().x();
             x[1] += cur_camera.get_camera_center().y();
@@ -187,19 +193,33 @@ namespace cvx {
         Eigen::LevenbergMarquardt<Eigen::NumericalDiff<ResidualFunctor>, double> lm(numerical_dif_functor);
         lm.parameters.ftol = 1e-6;
         lm.parameters.xtol = 1e-6;
-        lm.parameters.maxfev = 100;
+        lm.parameters.maxfev = 120;
+        
+        if (0)
+        {
+            // debug
+            Eigen::VectorXd errors(N);
+            opt_functor.getResult(x,
+                                  estimated_camera_center,
+                                  estimated_common_rotation,
+                                  estimated_cameras,
+                                  errors);
+            std::cout<<"Debug: initial reprojection error: "<<errors.transpose()<<std::endl;
+            
+        }
         
         Eigen::LevenbergMarquardtSpace::Status status = lm.minimize(x);
         
-        Eigen::VectorXd errors;
-        opt_functor.getResult(x, estimated_camera_center,
+        Eigen::VectorXd errors(N);
+        opt_functor.getResult(x,
+                              estimated_camera_center,
                               estimated_common_rotation,
                               estimated_cameras,
                               errors);
         // check reprojection error
         double max_reprojection_error = errors.maxCoeff();
         if (max_reprojection_error > error_threshold) {
-            std::cout<<"Warning, large reprojection error: "<<errors<<std::endl;
+            std::cout<<"Warning, large reprojection error: "<<errors.transpose()<<std::endl;
         }
         return max_reprojection_error < error_threshold;
     }

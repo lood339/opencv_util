@@ -5,7 +5,7 @@ import numpy as np
 import ctypes
 from ctypes import cdll
 from ctypes import c_int
-lib = cdll.LoadLibrary('./libcvx_opt_python.dylib')
+lib = cdll.LoadLibrary('./build/libcvx_opt_python.dylib')
 
 
 #param_name = c_char_p("/Users/jimmy/Desktop/learn_program/mt_dtc/dtc_tree_param.txt".encode('utf-8'))
@@ -22,6 +22,8 @@ model_pts[:,2] = 0.0
 
 rows, cols = model_pts.shape
 
+#print(model_pts)
+
 # initial camera data
 frames = [1, 25, 100, 125, 150]
 N = len(frames)
@@ -32,6 +34,8 @@ for i in range(len(frames)):
     init_cameras[i, :] = data
 print(init_cameras.shape)
 
+#sio.savemat('init_cameras.mat', {'init_camera':init_cameras})
+
 
 camera_num, camera_param_len = len(frames), 9
 
@@ -41,7 +45,7 @@ init_commont_rotation = np.zeros((3, 3))
 init_commont_rotation[0][0] = 1.0
 init_commont_rotation[1][2] = -1.0
 init_commont_rotation[2][1] = 1.0
-#print(init_commont_rotation)
+
 import cv2 as cv
 rod = np.zeros((3, 1))
 cv.Rodrigues(init_commont_rotation, rod)
@@ -51,6 +55,7 @@ opt_cameras = np.zeros((N, 3))
 common_center = np.zeros((3, 1))
 common_rotation = np.zeros((3, 1))
 
+"""
 lib.estimateCommomCameraCenterAndRotation(ctypes.c_void_p(model_pts.ctypes.data),
                                           c_int(rows),
                                           c_int(cols),
@@ -62,20 +67,8 @@ lib.estimateCommomCameraCenterAndRotation(ctypes.c_void_p(model_pts.ctypes.data)
                                           ctypes.c_void_p(common_center.ctypes.data),
                                           ctypes.c_void_p(common_rotation.ctypes.data))
 
-"""
-void estimateCommomCameraCenterAndRotation(const double* model_pts,
-                                               const int rows,
-                                               const int cols,
-                                               const double* input_init_cameras,
-                                               const int camera_num,
-                                               const int camera_param_len,
-                                               const double* input_init_common_rotation,
-                                               double* opt_cameras,
-                                               double* commom_center,
-                                               double* commom_rotation)
-"""
-print()
 
+"""
 """
 lib.dtc_train(ctypes.c_void_p(X_train.ctypes.data),
               ctypes.c_void_p(Y_train.ctypes.data),
