@@ -64,7 +64,7 @@ namespace cvx {
                 cvx::ptz_camera camera(pp_, cc, rod);
                 int idx = 0;
                 for(int i = 0; i<wld_pts_.size(); i++) {
-                    double pan  = x[6 + 3 * i];
+                    double pan  = x[6 + 3 * i + 0];
                     double tilt = x[6 + 3 * i + 1];
                     double fl   = x[6 + 3 * i + 2];
                     
@@ -88,13 +88,15 @@ namespace cvx {
             void getResult(const Eigen::VectorXd &x,
                            Vector3d& cc,
                            Vector3d& rod,
-                           vector<perspective_camera>& result,
+                           vector<perspective_camera>& cameras,
+                           vector<Vector3d>& ptz_result,
                            Eigen::VectorXd& reprojection_errors) const
             {
                 cc = Eigen::Vector3d(x[0], x[1], x[2]);
                 rod = Eigen::Vector3d(x[3], x[4], x[5]);
                 
-                
+                cameras.clear();
+                ptz_result.clear();
                 cvx::ptz_camera camera(pp_, cc, rod);
                 for(int i = 0; i<wld_pts_.size(); i++) {
                     double pan  = x[6 + 3 * i + 0];
@@ -103,6 +105,8 @@ namespace cvx {
                     
                     
                     Vector3d ptz(pan, tilt, fl);
+                    ptz_result.push_back(ptz);
+                    
                     camera.set_ptz(ptz);
                     
                     // point to point correspondence
@@ -118,9 +122,9 @@ namespace cvx {
                     //printf("\n");
                     error /= wld_pts_[i].size();
                     reprojection_errors[i] = error;
-                    result.push_back(camera);
+                    cameras.push_back(camera);
                 }
-                
+                assert(cameras.size() == ptz_result.size());
             }
         };
     }
@@ -132,7 +136,8 @@ namespace cvx {
                                                const Vector3d & init_common_rotation,
                                                Vector3d & estimated_camera_center,
                                                Vector3d & estimated_common_rotation,
-                                               vector<perspective_camera > & estimated_cameras)
+                                               vector<perspective_camera > & estimated_cameras,
+                                               vector<Vector3d>& estimated_ptzs)
     {
         // step 1: check input
         assert(wld_pts.size() == img_pts.size());
@@ -193,7 +198,7 @@ namespace cvx {
         Eigen::LevenbergMarquardt<Eigen::NumericalDiff<ResidualFunctor>, double> lm(numerical_dif_functor);
         lm.parameters.ftol = 1e-6;
         lm.parameters.xtol = 1e-6;
-        lm.parameters.maxfev = 120;
+        lm.parameters.maxfev = 100;
         
         if (0)
         {
@@ -203,24 +208,29 @@ namespace cvx {
                                   estimated_camera_center,
                                   estimated_common_rotation,
                                   estimated_cameras,
+                                  estimated_ptzs,
                                   errors);
             std::cout<<"Debug: initial reprojection error: "<<errors.transpose()<<std::endl;
             
         }
         
         Eigen::LevenbergMarquardtSpace::Status status = lm.minimize(x);
+        //std::cout<<status<<std::endl;
         
         Eigen::VectorXd errors(N);
         opt_functor.getResult(x,
                               estimated_camera_center,
                               estimated_common_rotation,
                               estimated_cameras,
+                              estimated_ptzs,
                               errors);
         // check reprojection error
         double max_reprojection_error = errors.maxCoeff();
         if (max_reprojection_error > error_threshold) {
             std::cout<<"Warning, large reprojection error: "<<errors.transpose()<<std::endl;
         }
+        assert(estimated_cameras.size() == N);
+        assert(estimated_ptzs.size() == N);
         return max_reprojection_error < error_threshold;
     }
 }

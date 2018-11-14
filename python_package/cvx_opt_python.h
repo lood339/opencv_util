@@ -20,7 +20,8 @@ extern "C" {
     //camera_num: M
     // camera_param_len: 9
     // input_init_common_rotation: 3 x 1 , rodrigues angle
-    // opt_cameras: M * 9, optimized PTZ camera
+    // opt_cameras: M * 9, optimized perspective camera
+    // opt_ptzs: M * 3, optimized pan, tilt and focal length
     // commom_center: camera center 3 * 1
     // commom_rotation: camera tripod rotation 3 * 1
     void estimateCommomCameraCenterAndRotation(const double* model_pts,
@@ -31,6 +32,7 @@ extern "C" {
                                                const int camera_param_len,
                                                const double* input_init_common_rotation,
                                                double* opt_cameras,
+                                               double* opt_ptzs,
                                                double* commom_center,
                                                double* commom_rotation);    
 }

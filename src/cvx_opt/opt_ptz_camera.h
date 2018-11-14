@@ -32,7 +32,8 @@ namespace cvx {
                                                const Vector3d & init_common_rotation,
                                                Vector3d & estimated_camera_center,
                                                Vector3d & estimated_common_rotation,
-                                               vector<perspective_camera > & estimated_cameras);    
+                                               vector<perspective_camera> & estimated_cameras,
+                                               vector<Vector3d>& estimated_ptzs);
     
 }
 

@@ -27,6 +27,7 @@ extern "C" {
                                                const int camera_param_len,
                                                const double* input_init_common_rotation,
                                                double* output_cameras,
+                                               double* output_ptzs,
                                                double* output_commom_center,
                                                double* output_commom_rotation)
     
@@ -80,35 +81,43 @@ extern "C" {
         for(int i = 0; i<init_cameras.size(); i++) {
             vector<Vector3d> cur_wld_pts;
             vector<Vector2d> cur_img_pts;
+            perspective_camera camera = init_cameras[i];
             for (int r = 0; r<wld_mat.rows(); r++) {
                 Eigen::Vector3d p = wld_mat.row(r);
-                Eigen::Vector2d q = init_cameras[i].project3d(p);
+                Eigen::Vector2d q = camera.project3d(p);
                 if (im_size.contains(q)) { // inside image
                     cur_wld_pts.push_back(p);
                     cur_img_pts.push_back(q);                    
                 }
-                //std::cout<<q.transpose()<<std::endl;
             }
             //std::cout<<std::endl;
             assert(cur_wld_pts.size() >= 2);
+            //printf("%lu\n", cur_img_pts.size());
             
             wld_pts.push_back(cur_wld_pts);
             img_pts.push_back(cur_img_pts);
         }
+        assert(wld_pts.size() == img_pts.size());
+        
         Vector3d estimated_camera_center;
         Vector3d estimated_common_rotation;
         vector<perspective_camera > estimated_cameras;
+        vector<Eigen::Vector3d> estimated_ptzs;
         bool is_estimated = cvx::estimateCommomCameraCenterAndRotation(wld_pts,
-                                                   img_pts,
-                                                   init_cameras,
-                                                   init_rod,
-                                                   estimated_camera_center,
-                                                   estimated_common_rotation,
-                                                   estimated_cameras);
+                                                                       img_pts,
+                                                                       init_cameras,
+                                                                       init_rod,
+                                                                       estimated_camera_center,
+                                                                       estimated_common_rotation,
+                                                                       estimated_cameras,
+                                                                       estimated_ptzs);
          //printf("5");
 
         if (!is_estimated) {
             printf("Warning: estimate PTZ camera center and tripod rotation failed!\n");
+            //for (int i = 0; i<estimated_ptzs.size(); i++) {
+            //    std::cout<<estimated_ptzs[i].transpose()<<std::endl;
+            //}
         }
         
         // step 3: output
@@ -119,12 +128,17 @@ extern "C" {
             output_cameras[i * 9 + 2] = camera.get_calibration().focal_length();
             
             output_cameras[i * 9 + 3] = camera.get_rotation().as_rodrigues().x();
-            output_cameras[i * 9 + 4] = camera.get_rotation().as_rodrigues().x();
-            output_cameras[i * 9 + 5] = camera.get_rotation().as_rodrigues().x();
+            output_cameras[i * 9 + 4] = camera.get_rotation().as_rodrigues().y();
+            output_cameras[i * 9 + 5] = camera.get_rotation().as_rodrigues().z();
             
             output_cameras[i * 9 + 6] = estimated_camera_center.x();
             output_cameras[i * 9 + 7] = estimated_camera_center.y();
             output_cameras[i * 9 + 8] = estimated_camera_center.z();
+            
+            
+            output_ptzs[i * 3 + 0] = estimated_ptzs[i].x();
+            output_ptzs[i * 3 + 1] = estimated_ptzs[i].y();
+            output_ptzs[i * 3 + 2] = estimated_ptzs[i].z();            
         }
         
         output_commom_center[0] = estimated_camera_center.x();
@@ -133,7 +147,7 @@ extern "C" {
         
         output_commom_rotation[0] = estimated_common_rotation.x();
         output_commom_rotation[1] = estimated_common_rotation.y();
-        output_commom_rotation[2] = estimated_common_rotation.z();
+        output_commom_rotation[2] = estimated_common_rotation.z();        
     }
 }
 
