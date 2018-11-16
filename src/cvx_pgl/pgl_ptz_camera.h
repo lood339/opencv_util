@@ -21,6 +21,8 @@ namespace cvx {
     using std::vector;
     using Eigen::MatrixXd;
     class ptz_camera :public perspective_camera {
+        
+    protected:
         Vector2d     pp_;     // principle point
         Vector3d     cc_;     // camera center
         Vector3d     base_rotation_;     // camera base rotation, rodrigues angle
@@ -31,9 +33,7 @@ namespace cvx {
         
         // @brief fl = 2000 is an arbitrary number
         ptz_camera(const Vector2d& pp, const Vector3d& cc,
-                   const Vector3d& base_rot, double pan = 0, double tilt = 0, double fl = 2000):pp_(pp),
-        cc_(cc), base_rotation_(base_rot), ptz_(pan, tilt, fl){camera_center_ = cc_;}
-        
+                   const Vector3d& base_rot, double pan = 0, double tilt = 0, double fl = 2000);
         
         // camera: has same camera center and base rotation
         // O(1)
@@ -52,10 +52,10 @@ namespace cvx {
                         const MatrixXd & img_pts);
         
         
-        double pan(void) { return ptz_[0];}
-        double tilt(void) { return ptz_[1]; }
-        double focal_length(void) { return ptz_[2];}
-        Vector3d ptz(void) { return ptz_; }
+        double pan(void) const { return ptz_[0];}
+        double tilt(void) const { return ptz_[1]; }
+        double focal_length(void) const { return ptz_[2];}
+        Vector3d ptz(void) const { return ptz_; }
         
         
         using proj_camera::project;

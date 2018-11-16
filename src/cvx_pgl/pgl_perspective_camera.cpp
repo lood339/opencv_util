@@ -90,7 +90,7 @@ namespace cvx {
          }
          Pnew(0,3) = -camera_center_.x();
          Pnew(1,3) = -camera_center_.y();
-         Pnew(2,3) = -camera_center_.z();
+         Pnew(2,3) = -camera_center_.z();         
          
          this->set_matrix(K_.get_matrix() * R_.as_matrix() * Pnew);
      }

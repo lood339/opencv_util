@@ -13,6 +13,7 @@ namespace cvx {
     proj_camera::proj_camera()
     {
         cached_svd_ = NULL;
+        P_.setZero();
     }
     
     proj_camera::~proj_camera()

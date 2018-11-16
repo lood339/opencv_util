@@ -14,7 +14,7 @@
 namespace cvx {
     
     typedef Eigen::Matrix<double, 3, 4> Matrix34d;
-    typedef Eigen::Matrix<float, 3, 4>  Matrix34f;
+    typedef Eigen::Matrix<float, 3, 4>  Matrix34f;    
 }
 
 

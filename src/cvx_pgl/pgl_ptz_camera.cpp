@@ -20,6 +20,16 @@ using std::endl;
 
 
 namespace cvx  {
+    
+    ptz_camera::ptz_camera(const Vector2d& pp, const Vector3d& cc,
+                           const Vector3d& base_rot, double pan, double tilt, double fl):pp_(pp),
+    cc_(cc), base_rotation_(base_rot), ptz_(pan, tilt, fl)
+    {
+        camera_center_ = cc_;
+        Vector3d ptz(pan, tilt, fl);
+        set_ptz(ptz);
+    }
+
     bool ptz_camera::set_camera(const perspective_camera& camera,
                                 const MatrixXd & wld_pts,
                                 const MatrixXd & img_pts)

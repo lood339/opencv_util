@@ -48,7 +48,7 @@ namespace cvx {
         
     protected:
         //: Recalculate the 3x4 camera matrix from the parameters.
-        void recompute_matrix();
+        virtual void recompute_matrix();
         
         calibration_matrix K_;
         Eigen::Vector3d camera_center_;
