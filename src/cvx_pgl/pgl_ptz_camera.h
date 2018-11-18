@@ -56,6 +56,7 @@ namespace cvx {
         double tilt(void) const { return ptz_[1]; }
         double focal_length(void) const { return ptz_[2];}
         Vector3d ptz(void) const { return ptz_; }
+        Vector3d get_shared_rotation(void) const {return base_rotation_;}
         
         
         using proj_camera::project;

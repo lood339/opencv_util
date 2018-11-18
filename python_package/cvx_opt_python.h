@@ -24,7 +24,7 @@ extern "C" {
     // opt_ptzs: M * 3, optimized pan, tilt and focal length
     // commom_center: camera center 3 * 1
     // commom_rotation: camera tripod rotation 3 * 1
-    void estimateCommomCameraCenterAndRotation(const double* model_pts,
+    void estimateCommonCameraCenterAndRotation(const double* model_pts,
                                                const int rows,
                                                const int cols,
                                                const double* input_init_cameras,
@@ -34,7 +34,38 @@ extern "C" {
                                                double* opt_cameras,
                                                double* opt_ptzs,
                                                double* commom_center,
-                                               double* commom_rotation);    
+                                               double* commom_rotation);
+    
+    // @ brief estimate broadcasting camera parameters for a set of cameras.
+    // camera model: PTZ camera + parameterized displacement
+    // "Mimicking Human Camera Operators" WACV 2015
+    // https://ieeexplore.ieee.org/document/7045890
+    // model_3d_points: N * 3
+    // point_num: N
+    // init_cameras: M * 9, ppx, ppy, fl, rodx, rody, rodz, cx, cy, cz
+    // output
+    // opt_cameras: optimized camera parameters M * 9. This camera model is not accurate
+    // opt_ptzs: optimized pan, tilt and focal length M * 3
+    // shared_parameters: 12, camera center (3), common rotation (3), lambda (6)
+    void estimateCommonCameraCenterAndRotationAndDisplacment(const double* model_3d_points,
+                                                             const int point_num,
+                                                             const double* init_cameras,
+                                                             const int camera_num,
+                                                             const double* init_common_rotation,
+                                                             double* opt_cameras,
+                                                             double* opt_ptzs,
+                                                             double* shared_parameters);
+    
+    // camera_parameters: shared (camera center, rotation, lambda), principal point, pan-tilt-zoom,  12 + 2 + 3 = 17
+    // model_3d_points: N * 3
+    // point_num: N
+    // output:
+    // image_points: projected image location, N * 2
+    void broadcastCameraProjection(const double* camera_parameters,
+                                   const double* model_3d_points,
+                                   const int point_num,
+                                   double* image_points);
+    
 }
 
 #endif

@@ -30,6 +30,13 @@ namespace cvx {
         
     }
     
+    void broadcast_camera::set_lambda(const VectorXd& lambda)
+    {
+        assert(lambda.size() == 6);
+        lambda_ = lambda;
+        recompute_matrix();
+    }
+    
     Vector3d broadcast_camera::displacement(void) const
     {
         double fl = this->focal_length();
@@ -60,7 +67,8 @@ namespace cvx {
         dis_mat(0, 3) = dis.x();
         dis_mat(1, 3) = dis.y();
         dis_mat(2, 3) = dis.z();
-                
+        
+        //printf("broadcast_camera::recompute_matrix \n");
         //  3 x 3, 3 x 4, 4 x 4, 4 x 4
         this->set_matrix(K_.get_matrix() * dis_mat * R * Pnew);
     }

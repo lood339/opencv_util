@@ -45,13 +45,15 @@ set(SOURCE_CVX_PGL
 	./src/cvx_pgl/pgl_calibration_matrix.cpp 
 	./src/cvx_pgl/pgl_perspective_camera.cpp 
 	./src/cvx_pgl/pgl_proj_camera.cpp
-	./src/cvx_pgl/pgl_ptz_camera.cpp)
+	./src/cvx_pgl/pgl_ptz_camera.cpp
+	./src/cvx_pgl/pgl_broadcast_camera.cpp)
 
 # .cpp in cvx_opt
 set(SOURCE_CVX_OPT
 	./src/cvx_opt/opt_homography.cpp 
 	./src/cvx_opt/opt_perspective_camera.cpp 
-	./src/cvx_opt/opt_ptz_camera.cpp)
+	./src/cvx_opt/opt_ptz_camera.cpp
+	./src/cvx_opt/opt_broadcast_camera.cpp)
 
 #set(SOURCE_CODE ${SOURCE_CODE1} ${SOURCE_CODE_DT_UTIL})
 

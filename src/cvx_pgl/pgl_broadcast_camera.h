@@ -41,15 +41,14 @@ namespace cvx {
                          double pan = 0, double tilt = 0, double fl = 2000);
         ~broadcast_camera();
         
+        void set_lambda(const VectorXd& lambda);
+        VectorXd lambda(void) const {return lambda_;}
+        
         // displacment between projection center and rotation center
         Vector3d displacement(void) const;
 
     protected:
-        virtual void recompute_matrix();
-        
-         
-        
-        
+        virtual void recompute_matrix();        
     };
 }
 
