@@ -9,6 +9,14 @@ lib = cdll.LoadLibrary('/Users/jimmy/Source/opencv_util/build/libcvx_wht_python.
 
 
 def extract_WHT_feature(rgb_im, points, patch_size, kernel_num):
+    """
+
+    :param rgb_im: H x W x 3, uint8
+    :param points: N * 2, float64
+    :param patch_size: 32, 64 ...
+    :param kernel_num: dimension of feature
+    :return: N * d, each row is a feature
+    """
     assert len(rgb_im.shape) == 3
     assert rgb_im.shape[2] == 3
     assert rgb_im.dtype == np.uint8

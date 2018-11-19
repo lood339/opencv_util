@@ -13,6 +13,8 @@ set (OpenCV_util_lib_MAJOR 1)
 set (OpenCV_util_lib_MINOR 0)
 
 set (USE_SERVER 0)
+set (USE_ANACONDA 1)
+
 
 
 # add the binary tree to the search path for include files
@@ -30,7 +32,11 @@ include_directories (${Eigen_DIR})
 endif()
 
 # link OpenCV
+if(USE_ANACONDA)
+set(OpenCV_DIR /Users/jimmy/anaconda3/envs/pytorch_env)
+else()
 set(OpenCV_DIR /Users/jimmy/Code/opencv-3.1.0/opencv_310)
+endif()
 include_directories ( ${OpenCV_DIR}/include )
 link_directories ( ${OpenCV_DIR}/lib )
 

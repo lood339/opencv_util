@@ -62,8 +62,10 @@ bool CvxWalshHadamard::generateWHFeature(const cv::Mat & image,
             setup->patternProjections = NULL;
             setup->patternImage = NULL;
         }
-         
-        feat /= feat.norm();
+        if (feat.norm() != 0) {  // @todo add an epsilon value here
+            feat /= feat.norm();
+        }
+
         features.push_back(feat);
     }
     
