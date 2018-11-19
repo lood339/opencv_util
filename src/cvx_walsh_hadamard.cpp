@@ -36,8 +36,9 @@ bool CvxWalshHadamard::generateWHFeature(const cv::Mat & image,
     
     // extract sub image
     for (int i = 0; i<pts.size(); i++) {
-        int x = pts[i].x;    // original x is the center of the patch, it becomes the top-left of the patch as padding
-        int y = pts[i].y;
+         // original x is the center of the patch, it becomes the top-left of the patch as padding
+        int x = cvRound(pts[i].x);
+        int y = cvRound(pts[i].y);
         assert(x >= 0 && x < col && y >= 0 && y < row);
         
         // test for channel
@@ -79,7 +80,7 @@ bool CvxWalshHadamard::generateWHFeatureWithoutFirstPattern(const cv::Mat & rgb_
                                                             const int kernelNum,
                                                             vector<Eigen::VectorXf> & features)
 {
-    assert(rgb_image.type() == CV_8UC3 || CV_8UC4);
+    assert(rgb_image.type() == CV_8UC3);
     
     vector<Eigen::VectorXf> wh_features;
     CvxWalshHadamard::generateWHFeature(rgb_image, pts, patchSize, kernelNum, wh_features);

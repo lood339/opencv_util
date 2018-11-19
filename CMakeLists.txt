@@ -90,6 +90,11 @@ add_library(cvx_opt_python SHARED ${SOURCE_CVX_GL}
 		${SOURCE_CVX_OPT_PYTHON} )
 
 
+set(SOURCE_CVX_WHT_PYTHON ./python_package/cvx_wht_python.cpp)
+add_library(cvx_wht_python SHARED ${SOURCE_WHT} ${SOURCE_CVX_WHT_PYTHON})
+target_link_libraries(cvx_wht_python opencv_core opencv_imgproc)
+
+
 
 
 
