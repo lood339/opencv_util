@@ -43,7 +43,6 @@ public:
                            const int kernelNum,
                            vector<Eigen::VectorXf> & features);
     
-    
 };
 
 #endif /* defined(__RGBD_RF__cvxWalshHadamardProjection__) */

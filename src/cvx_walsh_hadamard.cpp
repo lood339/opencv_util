@@ -6,7 +6,7 @@
 //  Copyright (c) 2016 Nowhere Planet. All rights reserved.
 //
 
-#include "cvxWalshHadamard.h"
+#include "cvx_walsh_hadamard.h"
 #include "wh.h"
 
 bool CvxWalshHadamard::generateWHFeature(const cv::Mat & image,
