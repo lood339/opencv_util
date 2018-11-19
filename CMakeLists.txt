@@ -29,9 +29,15 @@ set(Eigen_DIR /Users/jimmy/Code/Eigen_3.3.5)
 include_directories (${Eigen_DIR})
 endif()
 
+# link OpenCV
+set(OpenCV_DIR /Users/jimmy/Code/opencv-3.1.0/opencv_310)
+include_directories ( ${OpenCV_DIR}/include )
+link_directories ( ${OpenCV_DIR}/lib )
+
 
 # add directory files for head files?
-include_directories (./src ./src/cvx_gl ./src/cvx_pgl ./src/cvx_opt)
+include_directories (./src ./src/cvx_gl ./src/cvx_pgl ./src/cvx_opt
+                     ./src/third_part/walsh_hadamard)
 
 
 # .cpp in cvx_gl
@@ -55,6 +61,14 @@ set(SOURCE_CVX_OPT
 	./src/cvx_opt/opt_ptz_camera.cpp
 	./src/cvx_opt/opt_broadcast_camera.cpp)
 
+# .cpp in Walsh Hadamard Transform
+set(SOURCE_WHT ./src/third_part/walsh_hadamard/defs.c
+    ./src/third_part/walsh_hadamard/image.c
+    ./src/third_part/walsh_hadamard/matrix.c
+    ./src/third_part/walsh_hadamard/wh.c
+    ./src/cvx_walsh_hadamard.cpp)
+
+
 #set(SOURCE_CODE ${SOURCE_CODE1} ${SOURCE_CODE_DT_UTIL})
 
 # add the executable
@@ -62,7 +76,9 @@ set(SOURCE_CVX_OPT
 #add_executable(DTC_test ${TEST_SRC} ${SOURCE_CODE})
 
 # add library
-add_library(cvx SHARED ${SOURCE_CVX_GL} ${SOURCE_CVX_PGL} ${SOURCE_CVX_OPT})
+add_library(cvx SHARED ${SOURCE_CVX_GL} ${SOURCE_CVX_PGL} ${SOURCE_CVX_OPT}
+            ${SOURCE_WHT})
+target_link_libraries(cvx opencv_core opencv_imgproc opencv_imgcodecs)
 
 
 # for python interface
@@ -72,6 +88,7 @@ add_library(cvx_opt_python SHARED ${SOURCE_CVX_GL}
 		${SOURCE_CVX_PGL} 
 		${SOURCE_CVX_OPT}
 		${SOURCE_CVX_OPT_PYTHON} )
+
 
 
 
