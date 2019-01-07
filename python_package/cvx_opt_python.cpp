@@ -156,11 +156,13 @@ extern "C" {
                                                              const double* input_init_cameras,
                                                              const int camera_num,
                                                              const double* init_common_rotation,
+                                                             const int lambda_dim,
                                                              double* output_cameras,
                                                              double* output_ptzs,
                                                              double* output_shared_parameters)
     {
         assert(point_num >= 2);
+        assert(lambda_dim == 6 || lambda_dim == 12);
         
         // step 1: input data
         
@@ -225,11 +227,12 @@ extern "C" {
         assert(wld_pts.size() == img_pts.size());
         
         
-        vector<broadcast_camera> estimated_cameras;        
+        vector<broadcast_camera> estimated_cameras;
         bool is_estimated = cvx::estimateBroadcastCameras(wld_pts,
                                                           img_pts,
                                                           init_cameras,
                                                           init_rod,
+                                                          lambda_dim,
                                                           estimated_cameras);
         if (!is_estimated) {
             printf("Warning: broadcast camera estimation has larger reprojecion errors\n");
@@ -258,7 +261,7 @@ extern "C" {
         Eigen::Vector3d cc = estimated_cameras[0].get_camera_center();
         Eigen::Vector3d rod = estimated_cameras[0].get_shared_rotation();
         Eigen::VectorXd lambda = estimated_cameras[0].lambda();
-        assert(lambda.size() == 6);
+        assert(lambda.size() == lambda_dim);
         
         output_shared_parameters[0] = cc.x();
         output_shared_parameters[1] = cc.y();
@@ -268,24 +271,25 @@ extern "C" {
         output_shared_parameters[4] = rod.y();
         output_shared_parameters[5] = rod.z();
         
-        for(int i = 0; i<6; i++) {
+        for(int i = 0; i<lambda_dim; i++) {
             output_shared_parameters[6 + i] = lambda[i];
         }
     }
     
     void broadcastCameraProjection(const double* camera_parameters,
+                                   const int lambda_dim,
                                    const double* model_3d_points,
-                                   const int point_num,
+                                   const int point_num,                                   
                                    double* image_points)
     {
         // 1. input
         Eigen::Vector3d cc(camera_parameters[0], camera_parameters[1], camera_parameters[2]);
         Eigen::Vector3d base_rod(camera_parameters[3], camera_parameters[4], camera_parameters[5]);
-        Eigen::VectorXd lambda(6);
-        for (int i = 0; i<6; i++) {
+        Eigen::VectorXd lambda(lambda_dim);
+        for (int i = 0; i<lambda_dim; i++) {
             lambda[i] = camera_parameters[6 + i];
         }
-        const int shared_dim = 12;
+        const int shared_dim = 6 + lambda_dim;
         Eigen::Vector2d pp(camera_parameters[shared_dim + 0], camera_parameters[shared_dim + 1]);
         double pan = camera_parameters[shared_dim + 2];
         double tilt = camera_parameters[shared_dim + 3];

@@ -20,7 +20,10 @@
 // dx = \lambda_1 + \lambda_4 * f
 // dy = \lambda_2 + \lambda_5 * f
 // dz = \lambda_3 + \lambda_6 * f
-//
+// or
+// dx = \lambda_1 + \lambda_4 * f + \lambda_7 * pan + \lambda_10 * tilt
+// dy = \lambda_2 + \lambda_5 * f + \lambda_8 * pan + \lambda_11 * tilt
+// dz = \lambda_3 + \lambda_6 * f + \lambda_9 * pan + \lambda_12 * tilt
 
 namespace cvx {
     using Eigen::VectorXd;
@@ -28,10 +31,10 @@ namespace cvx {
     using Eigen::Matrix4d;
    
     class broadcast_camera : public ptz_camera {
-         VectorXd lambda_;   // dimension is 6
+         VectorXd lambda_;   // dimension is 6 or 12
         
     public:
-        broadcast_camera();
+        broadcast_camera(int lambda_dim = 6);
         
         // @brief fl = 2000 is an arbitrary number
         broadcast_camera(const Vector2d& pp,

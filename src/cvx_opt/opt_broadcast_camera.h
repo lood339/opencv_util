@@ -27,10 +27,12 @@ namespace cvx {
     //@ brief estimate camera center and tripod rotation, and displacement function for a set of PTZ cameras.
     //  each camera provide 2D-3D correspondences,
     // init_common_rotation: rodrigues angle
+    // lambda_dim: 6 or 12 with different camera models
     bool estimateBroadcastCameras(const vector<vector<Vector3d>> & wld_pts,
                                   const vector<vector<Vector2d>> & img_pts,
                                   const vector<perspective_camera> & init_cameras,
                                   const Vector3d & init_common_rotation,
+                                  const int lambda_dim,
                                   vector<broadcast_camera> & estimated_cameras);
                             
     

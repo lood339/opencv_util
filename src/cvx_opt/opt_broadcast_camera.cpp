@@ -37,16 +37,20 @@ namespace cvx {
             
             int param_num_;  // number of unknow parameters
             int constraint_num_;  // number of constraint
+            int common_para_num_; // number of common parameters
             
             CommomCameraCenterDisplacementAndRotationFunctor(const vector<vector<Vector3d>> & wld_pts,
                                                              const vector<vector<Vector2d>> & img_pts,
-                                                             const Vector2d & pp):
+                                                             const Vector2d & pp,
+                                                             const int common_param_num):
             wld_pts_(wld_pts),
             img_pts_(img_pts),
             pp_(pp)
             {
+                assert(common_param_num == 12 || common_param_num == 18);
                 assert(wld_pts.size() == img_pts.size());
-                param_num_ = 6 + 6 + 3 * (int)wld_pts.size();
+                common_para_num_ = common_param_num;
+                param_num_ = common_param_num + 3 * (int)wld_pts.size();
                 constraint_num_ = 0;
                 for(const auto& item: wld_pts) {
                     constraint_num_ += (int)item.size() * 2;
@@ -54,19 +58,19 @@ namespace cvx {
                 assert(constraint_num_ >= param_num_);
             }
             
-            
             int operator()(const Eigen::VectorXd &x, Eigen::VectorXd &fx) const
             {
                 Eigen::Vector3d cc(x[0], x[1], x[2]);
                 Eigen::Vector3d rod(x[3], x[4], x[5]);
-                Eigen::VectorXd lambda = x.segment(6, 6);
+                Eigen::VectorXd lambda = x.segment(6, common_para_num_-6);
                 
+                //std::cout<<"lambda: "<<lambda<<std::endl;
                 cvx::broadcast_camera camera(pp_, cc, rod, lambda);
                 int idx = 0;
                 for(int i = 0; i<wld_pts_.size(); i++) {
-                    double pan  = x[12 + 3 * i + 0];
-                    double tilt = x[12 + 3 * i + 1];
-                    double fl   = x[12 + 3 * i + 2];
+                    double pan  = x[common_para_num_ + 3 * i + 0];
+                    double tilt = x[common_para_num_ + 3 * i + 1];
+                    double fl   = x[common_para_num_ + 3 * i + 2];
                     
                     Vector3d ptz(pan, tilt, fl);
                     camera.set_ptz(ptz);
@@ -91,14 +95,14 @@ namespace cvx {
             {
                 Eigen::Vector3d cc(x[0], x[1], x[2]);
                 Eigen::Vector3d rod(x[3], x[4], x[5]);
-                Eigen::VectorXd lambda = x.segment(6, 6);
+                Eigen::VectorXd lambda = x.segment(6, common_para_num_-6);
                 
                 cameras.clear();
                 cvx::broadcast_camera camera(pp_, cc, rod, lambda);
                 for(int i = 0; i<wld_pts_.size(); i++) {
-                    double pan  = x[12 + 3 * i + 0];
-                    double tilt = x[12 + 3 * i + 1];
-                    double fl   = x[12 + 3 * i + 2];
+                    double pan  = x[common_para_num_ + 3 * i + 0];
+                    double tilt = x[common_para_num_ + 3 * i + 1];
+                    double fl   = x[common_para_num_ + 3 * i + 2];
                     
                     
                     Vector3d ptz(pan, tilt, fl);
@@ -129,11 +133,13 @@ namespace cvx {
                                   const vector<vector<Vector2d>> & img_pts,
                                   const vector<perspective_camera> & init_cameras,
                                   const Vector3d & init_common_rotation,
+                                  const int lambda_dim,
                                   vector<broadcast_camera> & estimated_cameras)
     {
         // step 1: check input
         assert(wld_pts.size() == img_pts.size());
         assert(wld_pts.size() == init_cameras.size());
+        assert(lambda_dim == 6 || lambda_dim == 12);
         const int N = (int)init_cameras.size();
         for (int i = 0; i<N; i++) {
             if(wld_pts[i].size() < 3) {
@@ -148,11 +154,13 @@ namespace cvx {
         Vector2d pp = init_cameras[0].get_calibration().principal_point();
         
         // step 2: prepare data
-        Eigen::VectorXd x(6 + 6 + 3 * (int)init_cameras.size()); // 6 + 6 + 3 * N, pan, tilt, focal length
+        Eigen::VectorXd x(6 + lambda_dim + 3 * (int)init_cameras.size()); // 6 + (6 or 12) + 3 * N, pan, tilt, focal length
         x.setZero();
         
         Matrix3d Rs_inv = cvx::rotation_3d(init_common_rotation).as_matrix().inverse();
+        const int common_para_num = 6 + lambda_dim;
         
+        // set initial values for cameras
         for (int i = 0; i<init_cameras.size(); i++) {
             perspective_camera cur_camera = init_cameras[i];
             double fl = cur_camera.get_calibration().focal_length();
@@ -165,9 +173,9 @@ namespace cvx {
             double sin_tilt = -R_pan_tilt(2, 1);
             double pan  = atan2(sin_pan, cos_pan) * 180.0 /M_PI;
             double tilt = atan2(sin_tilt, cos_tilt) * 180.0 /M_PI;
-            x[12 + 3 * i + 0] = pan;
-            x[12 + 3 * i + 1] = tilt;
-            x[12 + 3 * i + 2] = fl;
+            x[common_para_num + 3 * i + 0] = pan;
+            x[common_para_num + 3 * i + 1] = tilt;
+            x[common_para_num + 3 * i + 2] = fl;
             //printf("pan, tilt, focal length: %f %f %f\n", pan, tilt, fl);
             
             x[0] += cur_camera.get_camera_center().x();
@@ -184,12 +192,13 @@ namespace cvx {
         
         ResidualFunctor opt_functor(wld_pts,
                                     img_pts,
-                                    pp);
+                                    pp,
+                                    common_para_num);
         Eigen::NumericalDiff<ResidualFunctor> numerical_dif_functor(opt_functor);
         Eigen::LevenbergMarquardt<Eigen::NumericalDiff<ResidualFunctor>, double> lm(numerical_dif_functor);
         lm.parameters.ftol = 1e-6;
         lm.parameters.xtol = 1e-6;
-        lm.parameters.maxfev = 100;
+        lm.parameters.maxfev = 1000;
         
         if (0)
         {
@@ -202,7 +211,7 @@ namespace cvx {
         }
         
         Eigen::LevenbergMarquardtSpace::Status status = lm.minimize(x);
-        //std::cout<<status<<std::endl;
+        std::cout<<status<<std::endl;
         
         Eigen::VectorXd errors(N);
         opt_functor.getResult(x,
@@ -212,10 +221,12 @@ namespace cvx {
         double max_reprojection_error = errors.maxCoeff();
         if (max_reprojection_error > error_threshold) {
             std::cout<<"Warning, large reprojection error: "<<errors.transpose()<<std::endl;
+            std::cout<<"mean reprojection error: "<<errors.mean()<<std::endl;
         }
         else {
             std::cout<<"Small reprojection error: "<<errors.transpose()<<std::endl;
         }
+        
         assert(estimated_cameras.size() == N);
       
         return max_reprojection_error < error_threshold;

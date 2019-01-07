@@ -43,15 +43,17 @@ extern "C" {
     // model_3d_points: N * 3
     // point_num: N
     // init_cameras: M * 9, ppx, ppy, fl, rodx, rody, rodz, cx, cy, cz
+    // lambda_dim: 6 or 12
     // output
     // opt_cameras: optimized camera parameters M * 9. This camera model is not accurate
     // opt_ptzs: optimized pan, tilt and focal length M * 3
-    // shared_parameters: 12, camera center (3), common rotation (3), lambda (6)
+    // shared_parameters: 12, camera center (3), common rotation (3), lambda (6 or 12)
     void estimateCommonCameraCenterAndRotationAndDisplacment(const double* model_3d_points,
                                                              const int point_num,
                                                              const double* init_cameras,
                                                              const int camera_num,
                                                              const double* init_common_rotation,
+                                                             const int lambda_dim,
                                                              double* opt_cameras,
                                                              double* opt_ptzs,
                                                              double* shared_parameters);
@@ -59,11 +61,13 @@ extern "C" {
     // camera_parameters: shared (camera center, rotation, lambda), principal point, pan-tilt-zoom,  12 + 2 + 3 = 17
     // model_3d_points: N * 3
     // point_num: N
+    // lambda_dim: 6 or 12
     // output:
     // image_points: projected image location, N * 2
     void broadcastCameraProjection(const double* camera_parameters,
+                                   const int lambda_dim,
                                    const double* model_3d_points,
-                                   const int point_num,
+                                   const int point_num,                                   
                                    double* image_points);
     
 }

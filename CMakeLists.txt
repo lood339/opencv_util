@@ -13,7 +13,7 @@ set (OpenCV_util_lib_MAJOR 1)
 set (OpenCV_util_lib_MINOR 0)
 
 set (USE_SERVER 0)
-set (USE_ANACONDA 1)
+set (USE_ANACONDA 0)
 
 
 
@@ -35,9 +35,9 @@ endif()
 if(USE_ANACONDA)
 set(OpenCV_DIR /Users/jimmy/anaconda3/envs/pytorch_env)
 else()
-set(OpenCV_DIR /Users/jimmy/Code/opencv-3.1.0/opencv_310)
+set(OpenCV_DIR /Users/jimmy/Code/opencv-4.0.0/opencv_400)
 endif()
-include_directories ( ${OpenCV_DIR}/include )
+include_directories ( ${OpenCV_DIR}/include/opencv4 )
 link_directories ( ${OpenCV_DIR}/lib )
 
 

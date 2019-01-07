@@ -10,8 +10,8 @@
 
 
 namespace cvx {
-    broadcast_camera::broadcast_camera() {
-        lambda_ = Eigen::VectorXd(6);
+    broadcast_camera::broadcast_camera(int lambda_dim) {
+        lambda_ = Eigen::VectorXd(lambda_dim);
         lambda_.setZero();
     }
     
@@ -21,7 +21,7 @@ namespace cvx {
                                        const VectorXd& lambda,
                                        double pan, double tilt, double fl):ptz_camera(pp, cc, base_rot,
                                                                                        pan, tilt, fl) {
-        assert(lambda.size() == 6);
+        assert(lambda.size() == 6 || lambda.size() == 12);
         lambda_ = lambda;
         recompute_matrix();
     }
@@ -32,7 +32,7 @@ namespace cvx {
     
     void broadcast_camera::set_lambda(const VectorXd& lambda)
     {
-        assert(lambda.size() == 6);
+        assert(lambda.size() == 6 || lambda.size() == 12);
         lambda_ = lambda;
         recompute_matrix();
     }
@@ -40,9 +40,23 @@ namespace cvx {
     Vector3d broadcast_camera::displacement(void) const
     {
         double fl = this->focal_length();
-        Vector3d displacement = Vector3d(lambda_[0] + lambda_[3] * fl,
-                                         lambda_[1] + lambda_[4] * fl,
-                                         lambda_[2] + lambda_[5] * fl);
+        double pan = this->pan();
+        double tilt = this->tilt();
+        Vector3d displacement;
+        if (lambda_.size() == 6) {
+            displacement = Vector3d(lambda_[0] + lambda_[3] * fl,
+                                    lambda_[1] + lambda_[4] * fl,
+                                    lambda_[2] + lambda_[5] * fl);
+        }
+        else if (lambda_.size() == 12) {
+            displacement = Vector3d(lambda_[0] + lambda_[3] * fl + lambda_[6] * pan + lambda_[9] * tilt,
+                                    lambda_[1] + lambda_[4] * fl + lambda_[7] * pan + lambda_[10] * tilt,
+                                    lambda_[2] + lambda_[5] * fl + lambda_[8] * pan + lambda_[11] * tilt);
+        }
+        else {
+            printf("Error: lambda must be 6 or 12\n");
+        }
+        
         return displacement;
     }    
     
