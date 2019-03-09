@@ -229,6 +229,9 @@ namespace cvx {
         if (max_reprojection_error > error_threshold) {
             std::cout<<"Warning, large reprojection error: "<<errors.transpose()<<std::endl;
         }
+        else {
+            std::cout<<"Good, small reprojection error: "<<errors.transpose()<<std::endl;
+        }
         assert(estimated_cameras.size() == N);
         assert(estimated_ptzs.size() == N);
         return max_reprojection_error < error_threshold;

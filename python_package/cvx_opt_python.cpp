@@ -219,6 +219,10 @@ extern "C" {
                     cur_wld_pts.push_back(p);
                     cur_img_pts.push_back(q);
                 }
+                //printf("debug: %f %f\n", q.x(), q.y());
+            }
+            if (wld_pts.size() < 2) {
+                //printf("Error: inside image points number: %d %ld, too small\n", i, wld_pts.size());
             }
             assert(cur_wld_pts.size() >= 2);            
             wld_pts.push_back(cur_wld_pts);

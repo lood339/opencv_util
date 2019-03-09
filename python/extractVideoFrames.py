@@ -67,9 +67,9 @@ print('frame number is %d' % len(indices))
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
-for i in indices:
+for i in indices:   
     frame = getFrameByIndex(cap, i, fps_set)     
-    if frame != None:
+    if frame is not None:
         frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_CUBIC)
         name = save_dir + '/%08d.jpg' % i
         cv2.imwrite(name, frame)

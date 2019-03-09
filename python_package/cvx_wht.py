@@ -5,7 +5,7 @@ from ctypes import c_void_p
 import cv2 as cv
 
 #@todo hardcode library
-lib = cdll.LoadLibrary('/Users/jimmy/Source/opencv_util/build/libcvx_wht_python.dylib')
+lib = cdll.LoadLibrary('/Users/jimmy/Code/opencv_util/build/libcvx_wht_python.dylib')
 
 
 def extract_WHT_feature(rgb_im, points, patch_size, kernel_num):
