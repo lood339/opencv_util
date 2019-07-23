@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.5.1)
 
 cmake_policy(SET CMP0015 NEW)
 
@@ -13,7 +13,9 @@ set (OpenCV_util_lib_MAJOR 1)
 set (OpenCV_util_lib_MINOR 0)
 
 set (USE_SERVER 0)
-set (USE_ANACONDA 0)
+set (USE_ANACONDA 1)
+set (USE_LINUX 1)
+set (OPENCV_4 1)
 
 
 
@@ -21,25 +23,31 @@ set (USE_ANACONDA 0)
 # so that we will find TutorialConfig.h
 include_directories("${PROJECT_BINARY_DIR}")
 
+# conda path
+if(USE_LINUX)
+set (CONDA_DIR /home/jimmy/anaconda3/envs/pytorch_env)
+else()
+set (CONDA_DIR /Users/jimmy/anaconda3)
+endif()
 
 # link Eigen
-if(USE_SERVER)
-set(Eigen_DIR /lib/eigen_3.2.6/include/eigen3)
-include_directories (${Eigen_DIR})
-else()
-set(Eigen_DIR /Users/jimmy/thirdpart/Eigen-3.3.7)
-include_directories (${Eigen_DIR})
-endif()
+set(Eigen_DIR ${CONDA_DIR}/include/eigen3)
+include_directories ( ${Eigen_DIR} )
+
+#message (${Eigen_DIR})
+
 
 # link OpenCV
-if(USE_ANACONDA)
-set(OpenCV_DIR /Users/jimmy/anaconda3/envs/pytorch_env)
+
+set(OpenCV_DIR ${CONDA_DIR})
+
+if (OPENCV_4)
+include_directories ( ${OpenCV_DIR}/include/opencv4)
+link_directories ( ${OpenCV_DIR}/lib )
 else()
-set(OpenCV_DIR /Users/jimmy/thirdpart/opencv-3.2.0/opencv_320)
-endif()
 include_directories ( ${OpenCV_DIR}/include)
 link_directories ( ${OpenCV_DIR}/lib )
-
+endif()
 
 # add directory files for head files?
 include_directories (./src ./src/cvx_gl ./src/cvx_pgl ./src/cvx_opt
