@@ -198,9 +198,9 @@ namespace cvx {
         Eigen::LevenbergMarquardt<Eigen::NumericalDiff<ResidualFunctor>, double> lm(numerical_dif_functor);
         lm.parameters.ftol = 1e-6;
         lm.parameters.xtol = 1e-6;
-        lm.parameters.maxfev = 100;
+        lm.parameters.maxfev = 200;
         
-        if (0)
+        if (1)
         {
             // debug
             Eigen::VectorXd errors(N);

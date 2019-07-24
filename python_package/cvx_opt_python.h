@@ -68,7 +68,7 @@ extern "C" {
                                    const int lambda_dim,
                                    const double* model_3d_points,
                                    const int point_num,                                   
-                                   double* image_points);
+                                   double* image_points);    
     
 }
 
