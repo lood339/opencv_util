@@ -25,7 +25,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 # conda path
 if(USE_LINUX)
-set (CONDA_DIR /home/jimmy/anaconda3/envs/pytorch_env)
+set (CONDA_DIR /Users/jimmy/miniconda3/envs/pytorch_env)
 else()
 set (CONDA_DIR /Users/jimmy/anaconda3)
 endif()
@@ -34,7 +34,7 @@ endif()
 set(Eigen_DIR ${CONDA_DIR}/include/eigen3)
 include_directories ( ${Eigen_DIR} )
 
-#message (${Eigen_DIR})
+message (${Eigen_DIR})
 
 
 # link OpenCV
